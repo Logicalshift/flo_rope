@@ -6,5 +6,5 @@ pub trait Rope : Clone {
     type Cell: Clone;
 
     /// The type of an attribute in the rope. Every cell range has an attribute attached to it
-    type Attribute: Clone+Default;
+    type Attribute: PartialEq+Clone+Default;
 }
