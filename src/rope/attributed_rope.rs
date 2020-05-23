@@ -11,8 +11,14 @@ use std::ops::{Range};
 ///
 #[derive(Clone)]
 pub struct AttributedRope<Cell, Attribute> {
-    /// The root of this rope
-    root_node: RopeNode<Cell, Attribute>
+    /// The nodes that make up this rope
+    nodes: Vec<RopeNode<Cell, Attribute>>,
+
+    /// The index of the root node
+    root_node_idx: RopeNodeIndex,
+
+    /// The number of empty nodes in the nodes list
+    free_nodes: usize
 }
 
 impl<Cell, Attribute> AttributedRope<Cell, Attribute> 
@@ -24,8 +30,18 @@ where
     ///
     pub fn new() -> AttributedRope<Cell, Attribute> {
         AttributedRope {
-            root_node: RopeNode::Leaf(Arc::new(vec![]), Arc::new(Attribute::default()))
+            nodes:          vec![RopeNode::Leaf(None, Arc::new(vec![]), Arc::new(Attribute::default()))],
+            root_node_idx:  RopeNodeIndex(0),
+            free_nodes:     0
         }
+    }
+
+    ///
+    /// Retrieves the root node for this rope
+    ///
+    fn root_node<'a>(&'a self) -> &'a RopeNode<Cell, Attribute> {
+        let RopeNodeIndex(root_node_idx) = self.root_node_idx;
+        &self.nodes[root_node_idx]
     }
 }
 
@@ -43,9 +59,10 @@ where
     /// Returns the number of cells in this rope
     ///
     fn len(&self) -> usize {
-        match &self.root_node {
-            RopeNode::Leaf(cells, _)    => cells.len(),
-            RopeNode::Branch(branch)    => branch.len()
+        match self.root_node() {
+            RopeNode::Empty                         => 0,
+            RopeNode::Leaf(_parent, cells, _attr)   => cells.len(),
+            RopeNode::Branch(branch)                => branch.length
         }
     }
 
