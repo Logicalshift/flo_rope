@@ -8,5 +8,7 @@
 //!
 
 pub mod api;
+pub mod rope;
 
 pub use crate::api::*;
+pub use crate::rope::*;
