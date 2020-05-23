@@ -14,3 +14,12 @@ pub struct RopeBranch<Cell, Attribute> {
     /// The total length of all the substrings under this branch
     length: usize
 }
+
+impl<Cell, Attribute> RopeBranch<Cell, Attribute> {
+    ///
+    /// Returns the length of this substring
+    ///
+    pub fn len(&self) -> usize {
+        self.length
+    }
+}
