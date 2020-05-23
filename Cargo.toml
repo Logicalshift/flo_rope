@@ -1,0 +1,14 @@
+[package]
+name            = "flo_rope"
+version         = "0.1.0"
+license         = "Apache-2.0"
+authors         = ["Andrew Hunter <andrew@logicalshift.co.uk>"]
+description     = "An attributed and streaming implementation of the rope data structure"
+repository      = "https://github.com/Logicalshift/flo_rope"
+documentation   = "http://docs.rs/flo_rope"
+readme          = "README.md"
+edition         = "2018"
+
+keywords        = [ "rope", "text" ]
+
+[dependencies]
