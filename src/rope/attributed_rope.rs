@@ -40,8 +40,7 @@ where
     /// Retrieves the root node for this rope
     ///
     fn root_node<'a>(&'a self) -> &'a RopeNode<Cell, Attribute> {
-        let RopeNodeIndex(root_node_idx) = self.root_node_idx;
-        &self.nodes[root_node_idx]
+        &self.nodes[self.root_node_idx.idx()]
     }
 }
 

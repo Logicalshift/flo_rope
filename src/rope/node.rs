@@ -8,6 +8,19 @@ use std::sync::*;
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct RopeNodeIndex(pub usize);
 
+impl RopeNodeIndex {
+    pub fn idx(self) -> usize {
+        self.into()
+    }
+}
+
+impl Into<usize> for RopeNodeIndex {
+    fn into(self) -> usize {
+        let RopeNodeIndex(idx) = self;
+        idx
+    }
+}
+
 ///
 /// A node in a rope
 ///
