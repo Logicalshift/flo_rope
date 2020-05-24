@@ -23,8 +23,8 @@ pub struct AttributedRope<Cell, Attribute> {
 
 impl<Cell, Attribute> AttributedRope<Cell, Attribute> 
 where   
-    Cell:       Clone, 
-    Attribute:  PartialEq+Clone+Default {
+Cell:       Clone, 
+Attribute:  PartialEq+Clone+Default {
     ///
     /// Creates a new, empty rope
     ///
@@ -143,8 +143,8 @@ where
 
 impl<Cell, Attribute> Rope for AttributedRope<Cell, Attribute> 
 where   
-    Cell:       Clone, 
-    Attribute:  PartialEq+Clone+Default {
+Cell:       Clone, 
+Attribute:  PartialEq+Clone+Default {
 
     type Cell           = Cell;
     type Attribute      = Attribute;
@@ -171,8 +171,8 @@ where
 
 impl<Cell, Attribute> RopeMut for AttributedRope<Cell, Attribute> 
 where   
-    Cell:       Clone, 
-    Attribute:  PartialEq+Clone+Default {
+Cell:       Clone, 
+Attribute:  PartialEq+Clone+Default {
     ///
     /// Performs the specified editing action to this rope
     ///
