@@ -63,14 +63,14 @@ where
     ///
     /// Divides a node into two (replacing a leaf node with a branch node)
     ///
-    fn split(&mut self, leaf_node: RopeNodeIndex, index: usize) {
+    fn split(&mut self, leaf_node: RopeNodeIndex, split_index: usize) {
         if let RopeNode::Leaf(parent, cells, attribute) = &self.nodes[leaf_node.idx()] {
             // We split the node by cloning
             let (parent, cells, attribute) = (parent.clone(), cells.clone(), attribute.clone());
 
             // Split the cells into two halves
-            let left_cells      = cells[0..index].iter().cloned().collect::<Vec<_>>();
-            let right_cells     = cells[index..cells.len()].iter().cloned().collect::<Vec<_>>();
+            let left_cells      = cells[0..split_index].iter().cloned().collect::<Vec<_>>();
+            let right_cells     = cells[split_index..cells.len()].iter().cloned().collect::<Vec<_>>();
 
             // Generate the left and right nodes (the current leaf node will become the branch node)
             let left_node       = RopeNode::Leaf(Some(leaf_node), Arc::new(left_cells), attribute.clone());
@@ -86,6 +86,46 @@ where
                 length: cells.len(),
                 parent: parent
             }));
+        }
+    }
+
+    ///
+    /// Joins a branch node into a leaf node. The attributes are retained from the left-side only
+    ///
+    fn join(&mut self, branch_node_idx: RopeNodeIndex) {
+        // Fetch the branch and left/right nodes
+        let branch_node     = &self.nodes[branch_node_idx.idx()];
+
+        if let RopeNode::Branch(branch_node) = branch_node {
+            let branch_parent   = branch_node.parent;
+            let left_idx        = branch_node.left;
+            let right_idx       = branch_node.right;
+            let left_node       = &self.nodes[left_idx.idx()];
+            let right_node      = &self.nodes[right_idx.idx()];
+
+            match (left_node, right_node) {
+                (RopeNode::Leaf(_, left_cells, left_attributes), RopeNode::Leaf(_, right_cells, _right_attributes)) => {
+                    // Join the cells
+                    let joined_cells                    = left_cells.iter().cloned()
+                        .chain(right_cells.iter().cloned())
+                        .collect();
+                    let joined_attributes               = left_attributes.clone();
+
+                    // Free the old leaf nodes
+                    self.nodes[left_idx.idx()]          = RopeNode::Empty;
+                    self.nodes[right_idx.idx()]         = RopeNode::Empty;
+
+                    self.free_nodes.push(left_idx.idx());
+                    self.free_nodes.push(right_idx.idx());
+
+                    // Replace the branch node with a leaf node
+                    self.nodes[branch_node_idx.idx()]   = RopeNode::Leaf(branch_parent, Arc::new(joined_cells), joined_attributes);
+                }
+
+                _ => {
+                    // Not two leaf nodes, so there's no joining action that can be taken
+                }
+            }
         }
     }
 }
