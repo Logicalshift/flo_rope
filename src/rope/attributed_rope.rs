@@ -30,7 +30,7 @@ where
     ///
     pub fn new() -> AttributedRope<Cell, Attribute> {
         AttributedRope {
-            nodes:          vec![RopeNode::Leaf(None, Arc::new(vec![]), Arc::new(Attribute::default()))],
+            nodes:          vec![RopeNode::Leaf(None, vec![], Arc::new(Attribute::default()))],
             root_node_idx:  RopeNodeIndex(0),
             free_nodes:     vec![]
         }
@@ -73,8 +73,8 @@ where
             let right_cells     = cells[split_index..cells.len()].iter().cloned().collect::<Vec<_>>();
 
             // Generate the left and right nodes (the current leaf node will become the branch node)
-            let left_node       = RopeNode::Leaf(Some(leaf_node), Arc::new(left_cells), attribute.clone());
-            let right_node      = RopeNode::Leaf(Some(leaf_node), Arc::new(right_cells), attribute.clone());
+            let left_node       = RopeNode::Leaf(Some(leaf_node), left_cells, attribute.clone());
+            let right_node      = RopeNode::Leaf(Some(leaf_node), right_cells, attribute.clone());
 
             let left_idx        = self.store_new_node(left_node);
             let right_idx       = self.store_new_node(right_node);
@@ -119,7 +119,7 @@ where
                     self.free_nodes.push(right_idx.idx());
 
                     // Replace the branch node with a leaf node
-                    self.nodes[branch_node_idx.idx()]   = RopeNode::Leaf(branch_parent, Arc::new(joined_cells), joined_attributes);
+                    self.nodes[branch_node_idx.idx()]   = RopeNode::Leaf(branch_parent, joined_cells, joined_attributes);
                 }
 
                 _ => {

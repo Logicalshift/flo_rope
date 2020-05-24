@@ -30,7 +30,7 @@ pub enum RopeNode<Cell, Attribute> {
     Empty,
 
     /// A leaf node represents a substring of cells. The node index indicates the parent node
-    Leaf(Option<RopeNodeIndex>, Arc<Vec<Cell>>, Arc<Attribute>),
+    Leaf(Option<RopeNodeIndex>, Vec<Cell>, Arc<Attribute>),
 
     /// A rope branch represents a point where a rope is split into two substrings
     Branch(Arc<RopeBranch>)
