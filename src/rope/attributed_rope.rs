@@ -313,10 +313,8 @@ impl<Cell, Attribute> Rope for AttributedRope<Cell, Attribute>
 where   
 Cell:       Clone, 
 Attribute:  PartialEq+Clone+Default {
-
     type Cell           = Cell;
     type Attribute      = Attribute;
-    type CellIterator   = Box<dyn Iterator<Item=Cell>>;
 
     ///
     /// Returns the number of cells in this rope
@@ -332,7 +330,7 @@ Attribute:  PartialEq+Clone+Default {
     ///
     /// Reads the cell values for a range in this rope
     ///
-    fn read_cells(&self, range: Range<usize>) -> Self::CellIterator {
+    fn read_cells<'a>(&'a self, range: Range<usize>) -> Box<dyn 'a+Iterator<Item=&Self::Cell>> {
         unimplemented!()
     }
 }

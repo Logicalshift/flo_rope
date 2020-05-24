@@ -10,9 +10,6 @@ pub trait Rope : Clone {
     /// The type of an attribute in the rope. Every cell range has an attribute attached to it
     type Attribute: PartialEq+Clone+Default;
 
-    /// The type used to iterate through ranges of cells in this rope
-    type CellIterator: Iterator<Item=Self::Cell>;
-
     ///
     /// Returns the number of cells in this rope
     ///
@@ -21,5 +18,5 @@ pub trait Rope : Clone {
     ///
     /// Reads the cell values for a range in this rope
     ///
-    fn read_cells(&self, range: Range<usize>) -> Self::CellIterator;
+    fn read_cells<'a>(&'a self, range: Range<usize>) -> Box<dyn 'a+Iterator<Item=&Self::Cell>>;
 }
