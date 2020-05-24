@@ -6,6 +6,12 @@ use crate::api::*;
 use std::sync::*;
 use std::ops::{Range};
 
+/// The number of cells where we would rather split the rope than splice an existing cell
+const SPLIT_LENGTH: usize = 128;
+
+/// The length a node has to be to be a candidate for joining with its sibling after an edit
+const JOIN_LENGTH: usize = 8;
+
 ///
 /// The attributed rope struct provides the simplest implementation of a generic rope with attributes.
 ///
@@ -152,7 +158,7 @@ Attribute:  PartialEq+Clone+Default {
     ///
     /// Given a leaf-node, replaces a range of cells with some new values
     ///
-    fn replace<Cells: Iterator<Item=Cell>>(&mut self, leaf_node_idx: RopeNodeIndex, range: Range<usize>, new_cells: Cells) {
+    fn replace_cells<Cells: Iterator<Item=Cell>>(&mut self, leaf_node_idx: RopeNodeIndex, range: Range<usize>, new_cells: Cells) {
         if let RopeNode::Leaf(parent_idx, cells, _attributes) = &mut self.nodes[leaf_node_idx.idx()] {
             // Adjust the range to fit in the cell range
             let mut range = range;
@@ -187,9 +193,10 @@ Attribute:  PartialEq+Clone+Default {
     }
 
     ///
-    /// Finds the leaf node containing the specified index
+    /// Finds the leaf node containing the specified index. The value returned is the leaf node and the
+    /// offset from the rope start of the node start
     ///
-    fn find_leaf(&self, idx: usize) -> RopeNodeIndex {
+    fn find_leaf(&self, idx: usize) -> (usize, RopeNodeIndex) {
         // Start at the current node
         let mut current_node    = self.root_node_idx;
         let mut offset          = 0;
@@ -213,7 +220,7 @@ Attribute:  PartialEq+Clone+Default {
         }
 
         // Result is the leaf node we found
-        current_node
+        (offset, current_node)
     }
 }
 
@@ -254,9 +261,31 @@ Attribute:  PartialEq+Clone+Default {
     ///
     fn edit(&mut self, action: RopeAction<Self::Cell, Self::Attribute>) {
         match action {
-            RopeAction::Replace(range, new_cells)                               => { unimplemented!() }
-            RopeAction::SetAttributes(range, new_attributes)                    => { unimplemented!() }
-            RopeAction::ReplaceAttributes(range, new_cells, new_attributes)     => { unimplemented!() }
+            RopeAction::Replace(range, new_cells)                               => { self.replace(range, new_cells); }
+            RopeAction::SetAttributes(range, new_attributes)                    => { self.set_attributes(range, new_attributes); }
+            RopeAction::ReplaceAttributes(range, new_cells, new_attributes)     => { self.replace_attributes(range, new_cells, new_attributes); }
         }
+    }
+
+    ///
+    /// Replaces a range of cells. The attributes applied to the new cells will be the same
+    /// as the attributes that were applied to the first cell in the replacement range
+    ///
+    fn replace<NewCells: IntoIterator<Item=Self::Cell>>(&mut self, range: Range<usize>, new_cells: NewCells) {
+        unimplemented!()
+    }
+
+    ///
+    /// Sets the attributes for a range of cells
+    ///
+    fn set_attributes(&mut self, range: Range<usize>, new_attributes: Self::Attribute) {
+        unimplemented!()
+    }
+
+    ///
+    /// Replaces a range of cells and sets the attributes for them.
+    ///
+    fn replace_attributes<NewCells: IntoIterator<Item=Self::Cell>>(&mut self, range: Range<usize>, new_cells: NewCells, new_attributes: Self::Attribute) {
+        unimplemented!()
     }
 }
