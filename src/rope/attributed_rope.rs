@@ -340,7 +340,7 @@ Attribute:  PartialEq+Clone+Default {
         AttributedRopeIterator {
             rope:               self,
             node_idx:           node_idx,
-            node_offset:        node_offset,
+            node_offset:        range.start-node_offset,
             remaining_cells:    range.end-range.start
         }
     }
