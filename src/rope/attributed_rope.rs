@@ -49,6 +49,17 @@ Attribute:  PartialEq+Clone+Default {
     }
 
     ///
+    /// Creates a rope from a list of cells
+    ///
+    pub fn from<NewCells: IntoIterator<Item=Cell>>(cells: NewCells) -> AttributedRope<Cell, Attribute> {
+        AttributedRope {
+            nodes:          vec![RopeNode::Leaf(None, cells.into_iter().collect(), Arc::new(Attribute::default()))],
+            root_node_idx:  RopeNodeIndex(0),
+            free_nodes:     vec![]
+        }
+    }
+
+    ///
     /// Allocates space for a new node, stores it and returns the index that it was written to
     ///
     fn store_new_node(&mut self, node: RopeNode<Cell, Attribute>) -> RopeNodeIndex {
