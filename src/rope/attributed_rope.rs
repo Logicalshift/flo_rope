@@ -307,6 +307,22 @@ Attribute:  PartialEq+Clone+Default {
 
         // TODO: join 0-length leaf nodes
     }
+
+    ///
+    /// Reads the cell values for a range in this rope
+    ///
+    pub fn read_cells<'a>(&'a self, range: Range<usize>) -> AttributedRopeIterator<'a, Cell, Attribute> {
+        // Find the first cell in the range
+        let (node_offset, node_idx) = self.find_leaf(range.start);
+
+        // Create an iterator for the remaining cells
+        AttributedRopeIterator {
+            rope:               self,
+            node_idx:           node_idx,
+            node_offset:        node_offset,
+            remaining_cells:    range.end-range.start
+        }
+    }
 }
 
 impl<Cell, Attribute> Rope for AttributedRope<Cell, Attribute> 
@@ -331,7 +347,7 @@ Attribute:  PartialEq+Clone+Default {
     /// Reads the cell values for a range in this rope
     ///
     fn read_cells<'a>(&'a self, range: Range<usize>) -> Box<dyn 'a+Iterator<Item=&Self::Cell>> {
-        unimplemented!()
+        Box::new(self.read_cells(range))
     }
 }
 
@@ -387,5 +403,69 @@ Attribute:  PartialEq+Clone+Default {
     ///
     fn replace_attributes<NewCells: IntoIterator<Item=Self::Cell>>(&mut self, range: Range<usize>, new_cells: NewCells, new_attributes: Self::Attribute) {
         unimplemented!()
+    }
+}
+
+///
+/// Iterator that reads a range of cells in an attributed rope
+///
+pub struct AttributedRopeIterator<'a, Cell, Attribute> {
+    /// The rope that's being read
+    rope: &'a AttributedRope<Cell, Attribute>,
+
+    /// The node that's being read
+    node_idx: RopeNodeIndex,
+
+    /// The offset of the node
+    node_offset: usize,
+
+    /// The remaining number of cells to read from this iterator
+    remaining_cells: usize
+}
+
+impl<'a, Cell, Attribute> Iterator for AttributedRopeIterator<'a, Cell, Attribute>
+where   
+Cell:       Clone, 
+Attribute:  PartialEq+Clone+Default {
+    type Item = &'a Cell;
+
+    fn next(&mut self) -> Option<&'a Cell> {
+        if self.remaining_cells == 0 {
+            // No more cells to read
+            None
+        } else {
+            // Try to read the current cell from the current node
+            let node = &self.rope.nodes[self.node_idx.idx()];
+
+            if let RopeNode::Leaf(_, cells, _) = node {
+                if self.node_offset < cells.len() {
+                    // Fetch the cell
+                    let cell = &cells[self.node_offset];
+
+                    // Move to the next item
+                    self.node_offset        += 1;
+                    self.remaining_cells    -= 1;
+
+                    // Fetched the item
+                    Some(cell)
+                } else {
+                    // Passed over the end of the node
+                    if let Some(next_node) = self.rope.next_leaf_to_the_right(self.node_idx) {
+                        // Move on to the next node, and try again
+                        self.node_idx       = next_node;
+                        self.node_offset    = 0;
+
+                        self.next()
+                    } else {
+                        // Overran the end of the rope
+                        None
+                    }
+                }
+            } else {
+                // Not a leaf node
+                debug_assert!(false, "Rope iterator expects to only encounter leaf nodes");
+                None
+            }
+        }
     }
 }
