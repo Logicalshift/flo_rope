@@ -9,7 +9,7 @@ use std::sync::*;
 use std::ops::{Range};
 
 /// The number of cells where we would rather split the rope than splice an existing cell
-const SPLIT_LENGTH: usize = 128;
+const SPLIT_LENGTH: usize = 32;
 
 /// The length a node has to be to be a candidate for joining with its sibling after an edit
 const JOIN_LENGTH: usize = 8;
