@@ -1,5 +1,6 @@
 use super::node::*;
 use super::branch::*;
+use super::attributed_rope_iterator::*;
 
 use crate::api::*;
 
@@ -24,7 +25,7 @@ const JOIN_LENGTH: usize = 8;
 #[derive(Clone)]
 pub struct AttributedRope<Cell, Attribute> {
     /// The nodes that make up this rope
-    nodes: Vec<RopeNode<Cell, Attribute>>,
+    pub (super) nodes: Vec<RopeNode<Cell, Attribute>>,
 
     /// The index of the root node
     root_node_idx: RopeNodeIndex,
@@ -86,7 +87,7 @@ Attribute:  PartialEq+Clone+Default {
     ///
     /// Divides a node into two (replacing a leaf node with a branch node)
     ///
-    fn split(&mut self, leaf_node_idx: RopeNodeIndex, split_index: usize) {
+    pub (super) fn split(&mut self, leaf_node_idx: RopeNodeIndex, split_index: usize) {
         // Take the leaf node (this leaves it empty)
         let leaf_node = self.nodes[leaf_node_idx.idx()].take();
 
@@ -129,7 +130,7 @@ Attribute:  PartialEq+Clone+Default {
     ///
     /// Joins a branch node into a leaf node. The attributes are retained from the left-side only
     ///
-    fn join(&mut self, branch_node_idx: RopeNodeIndex) {
+    pub (super) fn join(&mut self, branch_node_idx: RopeNodeIndex) {
         // Fetch the branch and left/right nodes
         let branch_node     = &self.nodes[branch_node_idx.idx()];
 
@@ -239,7 +240,7 @@ Attribute:  PartialEq+Clone+Default {
     ///
     /// Finds the next leaf-node to the right of a particular node (None for the last node in the tree)
     ///
-    fn next_leaf_to_the_right(&self, node_idx: RopeNodeIndex) -> Option<RopeNodeIndex> {
+    pub (super) fn next_leaf_to_the_right(&self, node_idx: RopeNodeIndex) -> Option<RopeNodeIndex> {
         // The initial node is the 'left' node which we're trying to find the RHS for
         let mut left_node_idx           = node_idx;
         let mut maybe_parent_node_idx   = self.nodes[left_node_idx.idx()].parent();
@@ -414,69 +415,5 @@ Attribute:  PartialEq+Clone+Default {
     ///
     fn replace_attributes<NewCells: IntoIterator<Item=Self::Cell>>(&mut self, range: Range<usize>, new_cells: NewCells, new_attributes: Self::Attribute) {
         unimplemented!()
-    }
-}
-
-///
-/// Iterator that reads a range of cells in an attributed rope
-///
-pub struct AttributedRopeIterator<'a, Cell, Attribute> {
-    /// The rope that's being read
-    rope: &'a AttributedRope<Cell, Attribute>,
-
-    /// The node that's being read
-    node_idx: RopeNodeIndex,
-
-    /// The offset of the node
-    node_offset: usize,
-
-    /// The remaining number of cells to read from this iterator
-    remaining_cells: usize
-}
-
-impl<'a, Cell, Attribute> Iterator for AttributedRopeIterator<'a, Cell, Attribute>
-where   
-Cell:       Clone, 
-Attribute:  PartialEq+Clone+Default {
-    type Item = &'a Cell;
-
-    fn next(&mut self) -> Option<&'a Cell> {
-        if self.remaining_cells == 0 {
-            // No more cells to read
-            None
-        } else {
-            // Try to read the current cell from the current node
-            let node = &self.rope.nodes[self.node_idx.idx()];
-
-            if let RopeNode::Leaf(_, cells, _) = node {
-                if self.node_offset < cells.len() {
-                    // Fetch the cell
-                    let cell = &cells[self.node_offset];
-
-                    // Move to the next item
-                    self.node_offset        += 1;
-                    self.remaining_cells    -= 1;
-
-                    // Fetched the item
-                    Some(cell)
-                } else {
-                    // Passed over the end of the node
-                    if let Some(next_node) = self.rope.next_leaf_to_the_right(self.node_idx) {
-                        // Move on to the next node, and try again
-                        self.node_idx       = next_node;
-                        self.node_offset    = 0;
-
-                        self.next()
-                    } else {
-                        // Overran the end of the rope
-                        None
-                    }
-                }
-            } else {
-                // Not a leaf node
-                debug_assert!(false, "Rope iterator expects to only encounter leaf nodes");
-                None
-            }
-        }
     }
 }
