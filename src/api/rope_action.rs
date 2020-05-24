@@ -5,7 +5,9 @@ use std::ops::{Range};
 ///
 #[derive(Clone, PartialEq, Debug)]
 pub enum RopeAction<Cell, Attribute> {
-    /// Replaces a range of text in this rope
+    /// Replaces a range of text in this rope. The attributes applied to 
+    /// the new text will be the same as those applied to the first character 
+    /// in the replaced range.
     Replace(Range<usize>, Vec<Cell>),
 
     /// Sets the attributes for a range of text in this rope

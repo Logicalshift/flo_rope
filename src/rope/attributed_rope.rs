@@ -139,7 +139,6 @@ where
     type Attribute      = Attribute;
     type CellIterator   = Box<dyn Iterator<Item=Cell>>;
 
-
     ///
     /// Returns the number of cells in this rope
     ///
@@ -167,6 +166,10 @@ where
     /// Performs the specified editing action to this rope
     ///
     fn edit(&mut self, action: RopeAction<Self::Cell, Self::Attribute>) {
-        unimplemented!()
+        match action {
+            RopeAction::Replace(range, new_cells)                               => { unimplemented!() }
+            RopeAction::SetAttributes(range, new_attributes)                    => { unimplemented!() }
+            RopeAction::ReplaceAttributes(range, new_cells, new_attributes)     => { unimplemented!() }
+        }
     }
 }
