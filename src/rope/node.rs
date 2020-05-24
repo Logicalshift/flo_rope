@@ -46,4 +46,15 @@ impl<Cell, Attribute> RopeNode<Cell, Attribute> {
         mem::swap(self, &mut result);
         result
     }
+
+    ///
+    /// Retrieves the length of the substring in this node and its decendents
+    ///
+    pub fn len(&self) -> usize {
+        match self {
+            RopeNode::Empty             => 0,
+            RopeNode::Leaf(_, cells, _) => cells.len(),
+            RopeNode::Branch(branch)    => branch.length
+        }
+    }
 }

@@ -185,6 +185,36 @@ Attribute:  PartialEq+Clone+Default {
             debug_assert!(false, "Tried to replace text in a leaf node");
         }
     }
+
+    ///
+    /// Finds the leaf node containing the specified index
+    ///
+    fn find_leaf(&self, idx: usize) -> RopeNodeIndex {
+        // Start at the current node
+        let mut current_node    = self.root_node_idx;
+        let mut offset          = 0;
+
+        // Hunt for the leaf node that will contain this index
+        // For the purposes of this search, the last node contains all following indexes
+        while let RopeNode::Branch(branch) = &self.nodes[current_node.idx()] {
+            // Get the left and right-hand nodes
+            let left_idx    = branch.left;
+            let right_idx   = branch.right;
+
+            // Decide whether or not to follow to the left or right-hand side
+            let left_len    = self.nodes[left_idx.idx()].len();
+
+            if (idx - offset) < left_len {
+                current_node    = left_idx;
+            } else {
+                offset          += left_len;
+                current_node    = right_idx;
+            }
+        }
+
+        // Result is the leaf node we found
+        current_node
+    }
 }
 
 impl<Cell, Attribute> Rope for AttributedRope<Cell, Attribute> 
