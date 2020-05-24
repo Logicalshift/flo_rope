@@ -8,6 +8,12 @@ fn read_single_node() {
 }
 
 #[test]
+fn read_mid_range() {
+    let rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+    assert!(rope.read_cells(3..5).cloned().collect::<Vec<_>>() == vec![4, 5]);
+}
+
+#[test]
 fn read_after_full_split() {
     let mut rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
 
