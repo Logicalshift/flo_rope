@@ -57,4 +57,15 @@ impl<Cell, Attribute> RopeNode<Cell, Attribute> {
             RopeNode::Branch(branch)    => branch.length
         }
     }
+
+    ///
+    /// Retrieves the parent for this node
+    ///
+    pub fn parent(&self) -> Option<RopeNodeIndex> {
+        match self {
+            RopeNode::Empty                 => None,
+            RopeNode::Leaf(parent, _, _)    => *parent,
+            RopeNode::Branch(branch)        => branch.parent
+        }
+    }
 }

@@ -3,6 +3,7 @@ use super::branch::*;
 
 use crate::api::*;
 
+use std::iter;
 use std::sync::*;
 use std::ops::{Range};
 
@@ -225,6 +226,50 @@ Attribute:  PartialEq+Clone+Default {
     }
 
     ///
+    /// Finds the next leaf-node to the right of a particular node (None for the last node in the tree)
+    ///
+    fn next_leaf_to_the_right(&self, node_idx: RopeNodeIndex) -> Option<RopeNodeIndex> {
+        // The initial node is the 'left' node which we're trying to find the RHS for
+        let mut left_node_idx           = node_idx;
+        let mut maybe_parent_node_idx   = self.nodes[left_node_idx.idx()].parent();
+
+        // Move up the tree until the left node is on the left-hand side
+        let mut right_node_idx          = None;
+
+        while let Some(parent_node_idx) = maybe_parent_node_idx {
+            if let RopeNode::Branch(parent_branch) = &self.nodes[parent_node_idx.idx()] {
+                if left_node_idx == parent_branch.left {
+                    // We can follow the RHS of the parent node to find the neighboring element
+                    right_node_idx = Some(parent_branch.right);
+                    break;
+                } else {
+                    // Move up the tree
+                    debug_assert!(left_node_idx == parent_branch.right);
+
+                    maybe_parent_node_idx   = parent_branch.parent;
+                    left_node_idx           = parent_node_idx;
+                }
+            } else {
+                debug_assert!(false, "Parent node was not a branch");
+                maybe_parent_node_idx = None;
+            }
+        }
+
+        // Move right then down from the parent node until we reach a leaf node
+        if let Some(right_node_idx) = right_node_idx {
+            let mut next_node = right_node_idx;
+
+            while let RopeNode::Branch(branch) = &self.nodes[next_node.idx()] {
+                next_node = branch.left;
+            }
+
+            Some(next_node)
+        } else {
+            None
+        }
+    }
+
+    ///
     /// Performs a replacement operation on a particular leaf node
     ///
     fn replace_leaf<NewCells: Iterator<Item=Cell>>(&mut self, absolute_range: Range<usize>, leaf_offset: usize, leaf_node_idx: RopeNodeIndex, new_cells: NewCells) {
@@ -236,7 +281,29 @@ Attribute:  PartialEq+Clone+Default {
         // Replace within the leaf node
         self.replace_cells(leaf_node_idx, (absolute_range.start-leaf_offset)..(absolute_range.end-leaf_offset), new_cells);
 
-        // TODO: move to the right in the tree to remove extra characters from the range in the event it overruns the leaf cell
+        // Move to the right in the tree to remove extra characters from the range in the event it overruns the leaf cell
+        if leaf_pos + absolute_range.len() > leaf_end {
+            // Work out how many characters are remaining
+            let mut remaining_to_right  = absolute_range.len() - (leaf_pos - leaf_len);
+
+            // Keep removing from the next node to the right until there is none left
+            let mut last_node_idx = leaf_node_idx;
+            while remaining_to_right > 0 {
+                // Fetch the next node along
+                let next_node_idx   = match self.next_leaf_to_the_right(last_node_idx) { Some(node) => node, None => { break; } };
+
+                // Work out how many cells we can remove from this node
+                let next_node       = &self.nodes[next_node_idx.idx()];
+                let to_remove       = remaining_to_right.min(next_node.len());
+
+                // Remove the cells
+                self.replace_cells(next_node_idx, 0..to_remove, iter::empty());
+
+                // Move on if there are still remaining nodes to process
+                remaining_to_right  -= to_remove;
+                last_node_idx       = next_node_idx;
+            }
+        }
 
         // TODO: join 0-length leaf nodes
     }
