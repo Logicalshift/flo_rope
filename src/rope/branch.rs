@@ -3,7 +3,7 @@ use super::node::*;
 ///
 /// Represents a branch in a rope
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct RopeBranch {
     /// The left-hand side of the rope (first part of the string)
     pub left: RopeNodeIndex,

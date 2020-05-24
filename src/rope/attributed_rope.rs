@@ -7,7 +7,12 @@ use std::sync::*;
 use std::ops::{Range};
 
 ///
+/// The attributed rope struct provides the simplest implementation of a generic rope with attributes.
 ///
+/// This struct is suitable for data storage of bulk vectors of data where frequent and arbitrary editing
+/// is needed. Using a `u8` cell to represent UTF-8 makes this a suitable data type for building something
+/// like a text editor around, although for interactive applications, the streaming rope classes might be
+/// more suitable as they can dynamically notify about their updates.
 ///
 #[derive(Clone)]
 pub struct AttributedRope<Cell, Attribute> {
@@ -86,15 +91,17 @@ Attribute:  PartialEq+Clone+Default {
                 let right_idx       = self.store_new_node(right_node);
 
                 // Replace the leaf node with the new node
-                self.nodes[leaf_node_idx.idx()] = RopeNode::Branch(Arc::new(RopeBranch {
+                self.nodes[leaf_node_idx.idx()] = RopeNode::Branch(RopeBranch {
                     left:   left_idx,
                     right:  right_idx,
                     length: length,
                     parent: parent
-                }));
+                });
             }
 
             leaf_node => {
+                debug_assert!(false, "Tried to split non-leaf nodes");
+
                 // Not a leaf node: put the node back in the array
                 self.nodes[leaf_node_idx.idx()] = leaf_node;
             }
@@ -132,11 +139,50 @@ Attribute:  PartialEq+Clone+Default {
                 }
 
                 (left_node, right_node) => {
+                    debug_assert!(false, "Tried to join non-leaf nodes");
+
                     // Not two leaf nodes, so there's no joining action that can be taken: put the nodes back where they were
                     self.nodes[left_idx.idx()]  = left_node;
                     self.nodes[right_idx.idx()] = right_node;
                 }
             }
+        }
+    }
+
+    ///
+    /// Given a leaf-node, replaces a range of cells with some new values
+    ///
+    fn replace<Cells: Iterator<Item=Cell>>(&mut self, leaf_node_idx: RopeNodeIndex, range: Range<usize>, new_cells: Cells) {
+        if let RopeNode::Leaf(parent_idx, cells, _attributes) = &mut self.nodes[leaf_node_idx.idx()] {
+            // Adjust the range to fit in the cell range
+            let mut range = range;
+            if range.start > cells.len()    { range.start = cells.len(); }
+            if range.end > cells.len()      { range.end = cells.len(); }
+
+            // Work out the length difference
+            let length_diff = (range.len() as i64) - (cells.len() as i64);
+
+            // Substitute in the new cells
+            cells.splice(range, new_cells);
+
+            // Update the lengths in the branches above this node
+            let mut parent_idx = *parent_idx;
+
+            while let Some(branch_idx) = parent_idx {
+                if let RopeNode::Branch(branch) = &mut self.nodes[branch_idx.idx()] {
+                    // Adjust the branch length according to this replacement
+                    branch.length = ((branch.length as i64) + length_diff) as usize;
+
+                    // Continue with the parent of this node
+                    parent_idx = branch.parent;
+                } else {
+                    // The tree is malformed
+                    debug_assert!(false, "Parent node is not a branch");
+                    parent_idx = None;
+                }
+            }
+        } else {
+            debug_assert!(false, "Tried to replace text in a leaf node");
         }
     }
 }

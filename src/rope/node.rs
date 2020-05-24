@@ -34,7 +34,7 @@ pub enum RopeNode<Cell, Attribute> {
     Leaf(Option<RopeNodeIndex>, Vec<Cell>, Arc<Attribute>),
 
     /// A rope branch represents a point where a rope is split into two substrings
-    Branch(Arc<RopeBranch>)
+    Branch(RopeBranch)
 }
 
 impl<Cell, Attribute> RopeNode<Cell, Attribute> {
