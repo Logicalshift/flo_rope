@@ -1,5 +1,6 @@
 use super::branch::*;
 
+use std::mem;
 use std::sync::*;
 
 ///
@@ -34,4 +35,15 @@ pub enum RopeNode<Cell, Attribute> {
 
     /// A rope branch represents a point where a rope is split into two substrings
     Branch(Arc<RopeBranch>)
+}
+
+impl<Cell, Attribute> RopeNode<Cell, Attribute> {
+    ///
+    /// Takes the value from this node and sets it to empty
+    ///
+    pub fn take(&mut self) -> RopeNode<Cell, Attribute> {
+        let mut result = RopeNode::Empty;
+        mem::swap(self, &mut result);
+        result
+    }
 }

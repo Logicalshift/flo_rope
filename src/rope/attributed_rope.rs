@@ -100,21 +100,18 @@ where
             let branch_parent   = branch_node.parent;
             let left_idx        = branch_node.left;
             let right_idx       = branch_node.right;
-            let left_node       = &self.nodes[left_idx.idx()];
-            let right_node      = &self.nodes[right_idx.idx()];
+            let left_node       = self.nodes[left_idx.idx()].take();
+            let right_node      = self.nodes[right_idx.idx()].take();
 
             match (left_node, right_node) {
                 (RopeNode::Leaf(_, left_cells, left_attributes), RopeNode::Leaf(_, right_cells, _right_attributes)) => {
                     // Join the cells
-                    let joined_cells                    = left_cells.iter().cloned()
-                        .chain(right_cells.iter().cloned())
+                    let joined_cells                    = left_cells.into_iter()
+                        .chain(right_cells.into_iter())
                         .collect();
                     let joined_attributes               = left_attributes.clone();
 
-                    // Free the old leaf nodes
-                    self.nodes[left_idx.idx()]          = RopeNode::Empty;
-                    self.nodes[right_idx.idx()]         = RopeNode::Empty;
-
+                    // Free the old leaf nodes (the 'take()' action has already marked them as unused)
                     self.free_nodes.push(left_idx.idx());
                     self.free_nodes.push(right_idx.idx());
 
@@ -122,8 +119,10 @@ where
                     self.nodes[branch_node_idx.idx()]   = RopeNode::Leaf(branch_parent, joined_cells, joined_attributes);
                 }
 
-                _ => {
-                    // Not two leaf nodes, so there's no joining action that can be taken
+                (left_node, right_node) => {
+                    // Not two leaf nodes, so there's no joining action that can be taken: put the nodes back where they were
+                    self.nodes[left_idx.idx()]  = left_node;
+                    self.nodes[right_idx.idx()] = right_node;
                 }
             }
         }
