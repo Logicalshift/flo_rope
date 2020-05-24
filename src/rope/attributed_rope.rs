@@ -63,29 +63,41 @@ where
     ///
     /// Divides a node into two (replacing a leaf node with a branch node)
     ///
-    fn split(&mut self, leaf_node: RopeNodeIndex, split_index: usize) {
-        if let RopeNode::Leaf(parent, cells, attribute) = &self.nodes[leaf_node.idx()] {
-            // We split the node by cloning
-            let (parent, cells, attribute) = (parent.clone(), cells.clone(), attribute.clone());
+    fn split(&mut self, leaf_node_idx: RopeNodeIndex, split_index: usize) {
+        // Take the leaf node (this leaves it empty)
+        let leaf_node = self.nodes[leaf_node_idx.idx()].take();
 
-            // Split the cells into two halves
-            let left_cells      = cells[0..split_index].iter().cloned().collect::<Vec<_>>();
-            let right_cells     = cells[split_index..cells.len()].iter().cloned().collect::<Vec<_>>();
+        match leaf_node {
+            RopeNode::Leaf(parent, cells, attribute) => {
+                // We split the node by cloning
+                let (parent, cells, attribute) = (parent.clone(), cells.clone(), attribute.clone());
 
-            // Generate the left and right nodes (the current leaf node will become the branch node)
-            let left_node       = RopeNode::Leaf(Some(leaf_node), left_cells, attribute.clone());
-            let right_node      = RopeNode::Leaf(Some(leaf_node), right_cells, attribute.clone());
+                // Split the cells into two halves
+                let mut cells       = cells;
+                let right_cells     = cells.drain(split_index..cells.len()).collect::<Vec<_>>();
+                let left_cells      = cells;
+                let length          = left_cells.len() + right_cells.len();
 
-            let left_idx        = self.store_new_node(left_node);
-            let right_idx       = self.store_new_node(right_node);
+                // Generate the left and right nodes (the current leaf node will become the branch node)
+                let left_node       = RopeNode::Leaf(Some(leaf_node_idx), left_cells, attribute.clone());
+                let right_node      = RopeNode::Leaf(Some(leaf_node_idx), right_cells, attribute.clone());
 
-            // Replace the leaf node with the new node
-            self.nodes[leaf_node.idx()] = RopeNode::Branch(Arc::new(RopeBranch {
-                left:   left_idx,
-                right:  right_idx,
-                length: cells.len(),
-                parent: parent
-            }));
+                let left_idx        = self.store_new_node(left_node);
+                let right_idx       = self.store_new_node(right_node);
+
+                // Replace the leaf node with the new node
+                self.nodes[leaf_node_idx.idx()] = RopeNode::Branch(Arc::new(RopeBranch {
+                    left:   left_idx,
+                    right:  right_idx,
+                    length: length,
+                    parent: parent
+                }));
+            }
+
+            leaf_node => {
+                // Not a leaf node: put the node back in the array
+                self.nodes[leaf_node_idx.idx()] = leaf_node;
+            }
         }
     }
 
