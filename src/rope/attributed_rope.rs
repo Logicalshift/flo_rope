@@ -145,6 +145,7 @@ Attribute:  PartialEq+Clone+Default {
                 }
 
                 (left_node, right_node) => {
+                    // TODO: maybe allow for only the LHS or RHS node to be a leaf node?
                     debug_assert!(false, "Tried to join non-leaf nodes");
 
                     // Not two leaf nodes, so there's no joining action that can be taken: put the nodes back where they were
@@ -208,10 +209,10 @@ Attribute:  PartialEq+Clone+Default {
             let left_idx    = branch.left;
             let right_idx   = branch.right;
 
-            // Decide whether or not to follow to the left or right-hand side
+            // Decide whether or not to follow to the left or right-hand side. If the offset is between nodes, we choose the left-hand side.
             let left_len    = self.nodes[left_idx.idx()].len();
 
-            if (idx - offset) < left_len {
+            if (idx - offset) <= left_len {
                 current_node    = left_idx;
             } else {
                 offset          += left_len;
@@ -221,6 +222,23 @@ Attribute:  PartialEq+Clone+Default {
 
         // Result is the leaf node we found
         (offset, current_node)
+    }
+
+    ///
+    /// Performs a replacement operation on a particular leaf node
+    ///
+    fn replace_leaf<NewCells: Iterator<Item=Cell>>(&mut self, absolute_range: Range<usize>, leaf_offset: usize, leaf_node_idx: RopeNodeIndex, new_cells: NewCells) {
+        // Get the initial leaf length
+        let leaf_len    = self.nodes[leaf_node_idx.idx()].len();
+        let leaf_pos    = absolute_range.start - leaf_offset;
+        let leaf_end    = absolute_range.end - leaf_offset;
+
+        // Replace within the leaf node
+        self.replace_cells(leaf_node_idx, (absolute_range.start-leaf_offset)..(absolute_range.end-leaf_offset), new_cells);
+
+        // TODO: move to the right in the tree to remove extra characters from the range in the event it overruns the leaf cell
+
+        // TODO: join 0-length leaf nodes
     }
 }
 
@@ -272,7 +290,24 @@ Attribute:  PartialEq+Clone+Default {
     /// as the attributes that were applied to the first cell in the replacement range
     ///
     fn replace<NewCells: IntoIterator<Item=Self::Cell>>(&mut self, range: Range<usize>, new_cells: NewCells) {
-        unimplemented!()
+        // Find the replacement position
+        let (mut leaf_offset, mut leaf_node) = self.find_leaf(range.start);
+
+        // Split the leaf node if necessary (ie, if we need to insert cells more than SPLIT_LENGTH cells before the end)
+        let position_in_leaf = range.start - leaf_offset;
+        if self.nodes[leaf_node.idx()].len()-position_in_leaf > SPLIT_LENGTH {
+            // Split the leaf node
+            self.split(leaf_node, position_in_leaf);
+
+            // Pick the new leaf node to add to (TODO: the leaf node becomes a branch, we can select the LHS as it'll have the same offset)
+            let (new_leaf_offset, new_leaf_node) = self.find_leaf(range.start);
+            debug_assert!(leaf_offset == new_leaf_offset);
+            leaf_node   = new_leaf_node;
+            leaf_offset = new_leaf_offset;
+        }
+
+        // Delegate the replacement to replace_leaf
+        self.replace_leaf(range, leaf_offset, leaf_node, new_cells.into_iter());
     }
 
     ///
