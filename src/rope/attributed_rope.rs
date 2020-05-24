@@ -85,9 +85,18 @@ Attribute:  PartialEq+Clone+Default {
     }
 
     ///
+    /// Used by tests to force a split at a particular position
+    ///
+    #[cfg(test)]
+    pub (super) fn split_at(&mut self, pos: usize) {
+        let (offset, node_idx) = self.find_leaf(pos);
+        self.split(node_idx, pos-offset);
+    }
+
+    ///
     /// Divides a node into two (replacing a leaf node with a branch node)
     ///
-    pub (super) fn split(&mut self, leaf_node_idx: RopeNodeIndex, split_index: usize) {
+    fn split(&mut self, leaf_node_idx: RopeNodeIndex, split_index: usize) {
         // Take the leaf node (this leaves it empty)
         let leaf_node = self.nodes[leaf_node_idx.idx()].take();
 
@@ -130,7 +139,7 @@ Attribute:  PartialEq+Clone+Default {
     ///
     /// Joins a branch node into a leaf node. The attributes are retained from the left-side only
     ///
-    pub (super) fn join(&mut self, branch_node_idx: RopeNodeIndex) {
+    fn join(&mut self, branch_node_idx: RopeNodeIndex) {
         // Fetch the branch and left/right nodes
         let branch_node     = &self.nodes[branch_node_idx.idx()];
 
