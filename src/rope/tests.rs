@@ -38,6 +38,17 @@ fn remove_middle() {
 }
 
 #[test]
+fn join_after_partial_split() {
+    let mut rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+
+    rope.split_at(4);
+
+    rope.replace(1..7, vec![]);
+
+    assert!(rope.read_cells(0..8).cloned().collect::<Vec<_>>() == vec![1, 8]);
+}
+
+#[test]
 fn join_after_full_split() {
     let mut rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
 
