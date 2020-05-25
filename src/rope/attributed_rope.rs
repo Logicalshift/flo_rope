@@ -4,6 +4,7 @@ use super::attributed_rope_iterator::*;
 
 use crate::api::*;
 
+use std::mem;
 use std::iter;
 use std::sync::*;
 use std::ops::{Range};
@@ -184,43 +185,89 @@ Attribute:  PartialEq+Clone+Default {
     }
 
     ///
-    /// Joins a branch node into a leaf node. The attributes are retained from the left-side only
+    /// Joins a leaf node to the node immediately to the right
     ///
-    fn join(&mut self, branch_node_idx: RopeNodeIndex) {
-        // Fetch the branch and left/right nodes
-        let branch_node     = &self.nodes[branch_node_idx.idx()];
+    fn join_to_right(&mut self, leaf_node_idx: RopeNodeIndex) {
+        // Fetch the node to the right (we do nothing if there's no node to the right)
+        let right_node_idx = match self.next_leaf_to_the_right(leaf_node_idx) { Some(rhs) => rhs, None => { return; } };
 
-        if let RopeNode::Branch(branch_node) = branch_node {
-            let branch_parent   = branch_node.parent;
-            let left_idx        = branch_node.left;
-            let right_idx       = branch_node.right;
-            let left_node       = self.nodes[left_idx.idx()].take();
-            let right_node      = self.nodes[right_idx.idx()].take();
+        // Take the leaf node, leaving it empty
+        let leaf_node = self.nodes[leaf_node_idx.idx()].take();
 
-            match (left_node, right_node) {
-                (RopeNode::Leaf(_, left_cells, left_attributes), RopeNode::Leaf(_, right_cells, _right_attributes)) => {
-                    // Join the cells
-                    let joined_cells                    = left_cells.into_iter()
-                        .chain(right_cells.into_iter())
-                        .collect();
-                    let joined_attributes               = left_attributes.clone();
+        // Remove the branch node for this leaf
+        match leaf_node {
+            RopeNode::Leaf(parent_node_idx, lhs_cells, _)   => {
+                // Fetch the parent node
+                let parent_node_idx = match parent_node_idx { Some(idx) => idx, None => { return; } };
 
-                    // Free the old leaf nodes (the 'take()' action has already marked them as unused)
-                    self.free_nodes.push(left_idx.idx());
-                    self.free_nodes.push(right_idx.idx());
+                // Take the parent node too
+                let parent_node = self.nodes[parent_node_idx.idx()].take();
 
-                    // Replace the branch node with a leaf node
-                    self.nodes[branch_node_idx.idx()]   = RopeNode::Leaf(branch_parent, joined_cells, joined_attributes);
+                // Should be a branch with one branch being our leaf: pick the other side of the branch
+                let (remaining_node_idx, grandparent_node_idx) = match parent_node {
+                    RopeNode::Branch(branch) => {
+                        if branch.left == leaf_node_idx {
+                            (branch.right, branch.parent)
+                        } else {
+                            debug_assert!(branch.right == leaf_node_idx);
+                            (branch.left, branch.parent)
+                        }
+                    }
+
+                    _ => panic!("Parent node must be a branch node")
+                };
+
+                // Change the grandparent to point at the remaining node
+                match grandparent_node_idx {
+                    Some(grandparent_node_idx) => {
+                        match &mut self.nodes[grandparent_node_idx.idx()] {
+                            RopeNode::Branch(grandparent_branch) => {
+                                // Replace the left/right node with the remaining node from the original branch
+                                if grandparent_branch.left == parent_node_idx {
+                                    grandparent_branch.left = remaining_node_idx;
+                                } else {
+                                    debug_assert!(grandparent_branch.right == parent_node_idx);
+                                    grandparent_branch.right = remaining_node_idx;
+                                }
+                            }
+
+                            _ => panic!("Grandparent node must be a branch node")
+                        }
+                    }
+
+                    None => {
+                        // Found a new root node
+                        self.root_node_idx = remaining_node_idx;
+                    }
                 }
 
-                (left_node, right_node) => {
-                    // TODO: maybe allow for only the LHS or RHS node to be a leaf node?
-                    debug_assert!(false, "Tried to join non-leaf nodes");
+                // The parent and leaf node are no longer referenced
+                self.free_nodes.push(leaf_node_idx.idx());
+                self.free_nodes.push(parent_node_idx.idx());
 
-                    // Not two leaf nodes, so there's no joining action that can be taken: put the nodes back where they were
-                    self.nodes[left_idx.idx()]  = left_node;
-                    self.nodes[right_idx.idx()] = right_node;
+                // Join the text if the original leaf node is non-empty
+                if lhs_cells.len() > 0 {
+                    match &mut self.nodes[right_node_idx.idx()] {
+                        RopeNode::Leaf(_, rhs_cells, _) => {
+                            // The LHS cells are at the start of the new node, so swap them into the existing node
+                            let mut cells = lhs_cells;
+                            mem::swap(&mut cells, rhs_cells);
+
+                            // After the swap, lhs_cells contain the cells to append to the end
+                            rhs_cells.extend(cells);
+                        }
+
+                        _ => {
+                            panic!("RHS of a join operation was not a leaf node");
+                        }
+                    }
                 }
+            }
+
+            leaf_node => {
+                // Not a leaf node: replace it and stop
+                debug_assert!(false, "Tried to join a non-leaf node");
+                self.nodes[leaf_node_idx.idx()] = leaf_node;
             }
         }
     }
