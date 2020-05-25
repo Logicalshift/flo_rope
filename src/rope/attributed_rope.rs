@@ -388,7 +388,7 @@ Attribute:  PartialEq+Clone+Default {
         // Get the initial leaf length
         let leaf_len    = self.nodes[leaf_node_idx.idx()].len();
         let leaf_pos    = absolute_range.start - leaf_offset;
-        let leaf_end    = absolute_range.end - leaf_offset;
+        let leaf_end    = leaf_offset + leaf_len;
 
         // Replace within the leaf node
         self.replace_cells(leaf_node_idx, (absolute_range.start-leaf_offset)..(absolute_range.end-leaf_offset), new_cells);
@@ -423,12 +423,12 @@ Attribute:  PartialEq+Clone+Default {
             }
 
             // Join any empty nodes that are left after this operation
-            empty_nodes.into_iter().for_each(|empty_cell_idx| self.join_to_right(empty_cell_idx));
+            //empty_nodes.into_iter().for_each(|empty_cell_idx| self.join_to_right(empty_cell_idx));
         }
 
         // If the original target node is empty, join it to the right
         if self.nodes[leaf_node_idx.idx()].len() == 0 {
-            self.join_to_right(leaf_node_idx);
+            //self.join_to_right(leaf_node_idx);
         }
     }
 
