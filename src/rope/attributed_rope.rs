@@ -238,6 +238,13 @@ Attribute:  PartialEq+Clone+Default {
                     }
                 }
 
+                // Change the remaining node so its parent is the grandparent node
+                match &mut self.nodes[remaining_node_idx.idx()] {
+                    RopeNode::Leaf(parent, _, _)    => { *parent = grandparent_node_idx; }
+                    RopeNode::Branch(branch)        => { branch.parent = grandparent_node_idx; }
+                    RopeNode::Empty                 => { panic!("Found an unexpected empty node"); }
+                }
+
                 // The parent and leaf node are no longer referenced
                 self.free_nodes.push(leaf_node_idx.idx());
                 self.free_nodes.push(parent_node_idx.idx());
