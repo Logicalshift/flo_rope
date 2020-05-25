@@ -29,6 +29,32 @@ fn read_after_full_split() {
 }
 
 #[test]
+fn remove_middle() {
+    let mut rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+
+    rope.replace(1..7, vec![]);
+
+    assert!(rope.read_cells(0..8).cloned().collect::<Vec<_>>() == vec![1, 8]);
+}
+
+#[test]
+fn join_after_full_split() {
+    let mut rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+
+    rope.split_at(1);
+    rope.split_at(2);
+    rope.split_at(3);
+    rope.split_at(4);
+    rope.split_at(5);
+    rope.split_at(6);
+    rope.split_at(7);
+
+    rope.replace(1..7, vec![]);
+
+    assert!(rope.read_cells(0..8).cloned().collect::<Vec<_>>() == vec![1, 8]);
+}
+
+#[test]
 fn insert_and_find() {
     let mut rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
 
