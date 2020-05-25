@@ -423,12 +423,12 @@ Attribute:  PartialEq+Clone+Default {
             }
 
             // Join any empty nodes that are left after this operation
-            //empty_nodes.into_iter().for_each(|empty_cell_idx| self.join_to_right(empty_cell_idx));
+            empty_nodes.into_iter().for_each(|empty_cell_idx| self.join_to_right(empty_cell_idx));
         }
 
         // If the original target node is empty, join it to the right
         if self.nodes[leaf_node_idx.idx()].len() == 0 {
-            //self.join_to_right(leaf_node_idx);
+            self.join_to_right(leaf_node_idx);
         }
     }
 
