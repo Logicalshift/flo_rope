@@ -19,9 +19,6 @@ use std::ops::{Range};
 /// split in the event it doesn't always cover a whole cell.
 const SPLIT_LENGTH: usize = 32;
 
-/// The length a node has to be to be a candidate for joining with its sibling after an edit
-const JOIN_LENGTH: usize = 8;
-
 ///
 /// The attributed rope struct provides the simplest implementation of a generic rope with attributes.
 ///
@@ -402,7 +399,8 @@ Attribute:  PartialEq+Clone+Default {
             let mut remaining_to_right  = absolute_range.len() - (leaf_pos - leaf_len);
 
             // Keep removing from the next node to the right until there is none left
-            let mut last_node_idx = leaf_node_idx;
+            let mut last_node_idx   = leaf_node_idx;
+            let mut empty_nodes     = vec![];
             while remaining_to_right > 0 {
                 // Fetch the next node along
                 let next_node_idx   = match self.next_leaf_to_the_right(last_node_idx) { Some(node) => node, None => { break; } };
@@ -414,13 +412,24 @@ Attribute:  PartialEq+Clone+Default {
                 // Remove the cells
                 self.replace_cells(next_node_idx, 0..to_remove, iter::empty());
 
+                // Add to the list of empty nodes if this cell is empty
+                if self.nodes[next_node_idx.idx()].len() == 0 {
+                    empty_nodes.push(next_node_idx);
+                }
+
                 // Move on if there are still remaining nodes to process
                 remaining_to_right  -= to_remove;
                 last_node_idx       = next_node_idx;
             }
+
+            // Join any empty nodes that are left after this operation
+            empty_nodes.into_iter().for_each(|empty_cell_idx| self.join_to_right(empty_cell_idx));
         }
 
-        // TODO: join 0-length leaf nodes
+        // If the original target node is empty, join it to the right
+        if self.nodes[leaf_node_idx.idx()].len() == 0 {
+            self.join_to_right(leaf_node_idx);
+        }
     }
 
     ///
