@@ -463,7 +463,61 @@ Attribute:  PartialEq+Clone+Default {
     /// Sets the attributes for a range of cells
     ///
     fn set_attributes(&mut self, range: Range<usize>, new_attributes: Self::Attribute) {
-        unimplemented!()
+        let len                 = self.len();
+        let mut remaining_range = range;
+        let new_attributes      = Arc::new(new_attributes);
+
+        // Algorithm won't teminate if we try to set attributes beyond the end of the rope
+        if remaining_range.start > len  { remaining_range.start = len; }
+        if remaining_range.end > len    { remaining_range.end = len; }
+
+        // Get the current leaf node
+        let (mut leaf_offset, mut leaf_node_idx) = self.find_leaf(remaining_range.start);
+
+        // Iterate until we've covered the entire range
+        while remaining_range.start < remaining_range.end {
+            let leaf_node   = &self.nodes[leaf_node_idx.idx()];
+            let leaf_len    = leaf_node.len();
+            let leaf_attr   = match leaf_node { RopeNode::Leaf(_, _, leaf_attributes) => leaf_attributes, _ => { break; } };
+
+            // remaining_range.start must be within the current leaf node
+            if (**leaf_attr).eq(&*new_attributes) {
+                // This region already has the correct attributes, so move to the right
+                remaining_range.start += leaf_len;
+                leaf_offset     += leaf_len;
+                leaf_node_idx   = match self.next_leaf_to_the_right(leaf_node_idx) { Some(idx) => idx, None => { break; } };
+
+            } else if remaining_range.start >= leaf_offset + leaf_len {
+                // Range starts at the end of the current leaf node, so move to the right
+                leaf_offset     += leaf_len;
+                leaf_node_idx   = match self.next_leaf_to_the_right(leaf_node_idx) { Some(idx) => idx, None => { break; } };
+
+            } else if remaining_range.start != leaf_offset {
+                // The attributes start in the middle of the current leaf node, so split it and try again
+                let split_pos   = remaining_range.start - leaf_offset;
+                leaf_node_idx   = self.split(leaf_node_idx, split_pos);
+                leaf_node_idx   = match self.next_leaf_to_the_right(leaf_node_idx) { Some(idx) => idx, None => { break; } };
+                leaf_offset     += split_pos;
+
+            } else if remaining_range.end <= leaf_offset + leaf_len {
+                // The attributes end before the end of the current leaf node, so split it and try again
+                let split_pos   = remaining_range.end - leaf_offset;
+                leaf_node_idx   = self.split(leaf_node_idx, split_pos);
+
+            } else {
+                // The entire range is to be set with the new attribute
+                match &mut self.nodes[leaf_node_idx.idx()] {
+                    RopeNode::Leaf(_, _, leaf_attributes)   => { *leaf_attributes = Arc::clone(&new_attributes); }
+                    _                                       => { debug_assert!(false, "Missing leaf node"); }
+                }
+
+                // Move to the right to continue setting attributes
+                remaining_range.start += leaf_len;
+                leaf_offset     += leaf_len;
+                leaf_node_idx   = match self.next_leaf_to_the_right(leaf_node_idx) { Some(idx) => idx, None => { break; } };
+
+            }
+        }
     }
 
     ///
