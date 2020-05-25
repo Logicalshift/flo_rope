@@ -396,7 +396,7 @@ Attribute:  PartialEq+Clone+Default {
         // Move to the right in the tree to remove extra characters from the range in the event it overruns the leaf cell
         if leaf_pos + absolute_range.len() > leaf_end {
             // Work out how many characters are remaining
-            let mut remaining_to_right  = absolute_range.len() - (leaf_pos - leaf_len);
+            let mut remaining_to_right  = absolute_range.len() - (leaf_len - leaf_pos);
 
             // Keep removing from the next node to the right until there is none left
             let mut last_node_idx   = leaf_node_idx;
