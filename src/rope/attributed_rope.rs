@@ -9,6 +9,13 @@ use std::sync::*;
 use std::ops::{Range};
 
 /// The number of cells where we would rather split the rope than splice an existing cell
+///
+/// (We don't need to always append at the end of a string as inserting in the middle will still be
+/// fast enough: depending on the application it could potentially be valid to allow for quite long 
+/// cell sizes)
+///
+/// Attributes are attached to cells, so setting an attribute on a range will always generate a
+/// split in the event it doesn't always cover a whole cell.
 const SPLIT_LENGTH: usize = 32;
 
 /// The length a node has to be to be a candidate for joining with its sibling after an edit
@@ -102,9 +109,6 @@ Attribute:  PartialEq+Clone+Default {
 
         match leaf_node {
             RopeNode::Leaf(parent, cells, attribute) => {
-                // We split the node by cloning
-                let (parent, cells, attribute) = (parent.clone(), cells.clone(), attribute.clone());
-
                 // Split the cells into two halves
                 let mut cells       = cells;
                 let right_cells     = cells.drain(split_index..cells.len()).collect::<Vec<_>>();
