@@ -101,9 +101,9 @@ Attribute:  PartialEq+Clone+Default {
     }
 
     ///
-    /// Divides a node into two (replacing a leaf node with a branch node)
+    /// Divides a node into two (replacing a leaf node with a branch node). Returns the left-hand node of the split
     ///
-    fn split(&mut self, leaf_node_idx: RopeNodeIndex, split_index: usize) {
+    fn split(&mut self, leaf_node_idx: RopeNodeIndex, split_index: usize) -> RopeNodeIndex {
         // Take the leaf node (this leaves it empty)
         let leaf_node = self.nodes[leaf_node_idx.idx()].take();
 
@@ -129,6 +129,8 @@ Attribute:  PartialEq+Clone+Default {
                     length: length,
                     parent: parent
                 });
+
+                left_idx
             }
 
             leaf_node => {
@@ -136,6 +138,47 @@ Attribute:  PartialEq+Clone+Default {
 
                 // Not a leaf node: put the node back in the array
                 self.nodes[leaf_node_idx.idx()] = leaf_node;
+
+                leaf_node_idx
+            }
+        }
+    }
+
+    ///
+    /// Inserts a blank node into an existing leaf node (useful when inserting cells with different attributes
+    /// to their surroundings). Returns the index of the blank node.
+    ///
+    fn insert_blank_node(&mut self, leaf_node_idx: RopeNodeIndex, split_index: usize) -> RopeNodeIndex {
+        // If the split is right at the start of the node, then this is just a normal split operation at index 0
+        if split_index == 0 {
+            // As the split is right at the start, we can just add a new item right there
+            self.split(leaf_node_idx, 0)
+        } else {
+            // Take the leaf node (this leaves it empty)
+            let leaf_node = &self.nodes[leaf_node_idx.idx()];
+
+            match leaf_node {
+                RopeNode::Leaf(_, cells, _) => {
+                    if split_index >= cells.len() {
+                        // Result is the RHS of the leaf node generated after a single split
+                        let lhs_idx = self.split(leaf_node_idx, split_index);
+                        let rhs_idx = self.next_leaf_to_the_right(lhs_idx).expect("Split failed to create RHS leaf node");
+
+                        rhs_idx
+                    } else {
+                        // Need to make two splits to divide the existing node
+                        let lhs_idx     = self.split(leaf_node_idx, split_index);
+                        let rhs_idx     = self.next_leaf_to_the_right(lhs_idx).expect("Split failed to create RHS leaf node");
+                        let empty_leaf  = self.split(rhs_idx, 0);
+
+                        empty_leaf
+                    }
+                }
+
+                _ => {
+                    // Can only perform this operation on leaf nodes
+                    panic!("Tried to split non-leaf nodes");
+                }
             }
         }
     }
@@ -427,6 +470,48 @@ Attribute:  PartialEq+Clone+Default {
     /// Replaces a range of cells and sets the attributes for them.
     ///
     fn replace_attributes<NewCells: IntoIterator<Item=Self::Cell>>(&mut self, range: Range<usize>, new_cells: NewCells, new_attributes: Self::Attribute) {
-        unimplemented!()
+        // There are three cases to deal with here:
+        //   * range starts in an existing cell with different attributes (we insert a blank cell and set the attributes there)
+        //   * range is in an existing cell with the same attributes (just add to the cell)
+        //   * range is at the start of an existing cell with different attributes but covers the entire cell (change the attributes and replace the cell)
+
+        let (leaf_offset, leaf_node_idx)    = self.find_leaf(range.start);
+        let leaf_node                       = &self.nodes[leaf_node_idx.idx()];
+        let leaf_attributes                 = match leaf_node {
+            RopeNode::Leaf(_, _, attributes)    => attributes,
+            _                                   => { debug_assert!(false, "Failed to find leafnode while replacing text"); return; }
+        };
+
+        if (&**leaf_attributes).eq(&new_attributes) {
+            // Attributes are unchanged for this node
+            // TODO: a small optimisation would be to avoid searching for the node again in this step
+            self.replace(range, new_cells);
+        } else if leaf_offset == range.start && leaf_node.len() < range.len() {
+            // Leaf node has different attributes but the entire node is covered, so we can just replace the attributes of the existing node
+
+            // Replace attributes
+            match &mut self.nodes[leaf_node_idx.idx()] {
+                RopeNode::Leaf(_, _, attributes)    => *attributes = Arc::new(new_attributes),
+                _                                   => debug_assert!(false, "Failed to find a leaf node to set attributes on")
+            }
+
+            // Replace contents
+            // TODO: same optimisation as before
+            self.replace(range, new_cells);
+        } else {
+            // Create a blank node and insert the attributes there
+            let empty_node_idx = self.insert_blank_node(leaf_node_idx, range.start - leaf_offset);
+
+            // Replace attributes
+            match &mut self.nodes[empty_node_idx.idx()] {
+                RopeNode::Leaf(_, _, attributes)    => *attributes = Arc::new(new_attributes),
+                _                                   => debug_assert!(false, "Failed to find a leaf node to set attributes on")
+            }
+
+            // Replace contents
+            // TODO: same optimisation as before
+            let range_start = range.start;
+            self.replace_leaf(range, range_start, empty_node_idx, new_cells.into_iter());
+        }
     }
 }
