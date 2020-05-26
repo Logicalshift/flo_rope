@@ -13,7 +13,6 @@ fn read_single_node_attributes() {
     assert!(rope.read_attributes(0) == (&(), 0..8));
 }
 
-
 #[test]
 fn set_attributes() {
     let mut rope = AttributedRope::<_, i64>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
@@ -22,7 +21,18 @@ fn set_attributes() {
 
     assert!(rope.read_attributes(0) == (&0, 0..3));
     assert!(rope.read_attributes(3) == (&2, 3..6));
-    assert!(rope.read_attributes(6) == (&0, 0..3));
+    assert!(rope.read_attributes(6) == (&0, 6..8));
+}
+
+#[test]
+fn replace_attributes() {
+    let mut rope = AttributedRope::<_, i64>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+
+    rope.replace_attributes(3..6, vec![9, 10], 2);
+
+    assert!(rope.read_attributes(0) == (&0, 0..3));
+    assert!(rope.read_attributes(3) == (&2, 3..5));
+    assert!(rope.read_attributes(6) == (&0, 5..7));
 }
 
 #[test]
