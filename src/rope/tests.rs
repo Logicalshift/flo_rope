@@ -8,6 +8,24 @@ fn read_single_node() {
 }
 
 #[test]
+fn read_single_node_attributes() {
+    let rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+    assert!(rope.read_attributes(0) == (&(), 0..8));
+}
+
+
+#[test]
+fn set_attributes() {
+    let mut rope = AttributedRope::<_, i64>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+
+    rope.set_attributes(3..6, 2);
+
+    assert!(rope.read_attributes(0) == (&0, 0..3));
+    assert!(rope.read_attributes(3) == (&2, 3..6));
+    assert!(rope.read_attributes(6) == (&0, 0..3));
+}
+
+#[test]
 fn read_mid_range() {
     let rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
     assert!(rope.read_cells(3..5).cloned().collect::<Vec<_>>() == vec![4, 5]);
@@ -26,6 +44,21 @@ fn read_after_full_split() {
     rope.split_at(7);
 
     assert!(rope.read_cells(0..8).cloned().collect::<Vec<_>>() == vec![1, 2, 3, 4, 5, 6, 7, 8]);
+}
+
+#[test]
+fn read_attributes_after_full_split() {
+    let mut rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+
+    rope.split_at(1);
+    rope.split_at(2);
+    rope.split_at(3);
+    rope.split_at(4);
+    rope.split_at(5);
+    rope.split_at(6);
+    rope.split_at(7);
+
+    assert!(rope.read_attributes(0) == (&(), 0..8));
 }
 
 #[test]
