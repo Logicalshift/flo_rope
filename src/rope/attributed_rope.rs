@@ -480,6 +480,49 @@ Attribute:  PartialEq+Clone+Default {
     fn read_cells<'a>(&'a self, range: Range<usize>) -> Box<dyn 'a+Iterator<Item=&Self::Cell>> {
         Box::new(self.read_cells(range))
     }
+
+    ///
+    /// Returns the attributes set at the specified location and their extent
+    ///
+    fn read_attributes<'a>(&'a self, pos: usize) -> (&'a Attribute, Range<usize>) {
+        // Retrieve the node at the requested location
+        let (leaf_offset, leaf_node_idx)    = self.find_leaf(pos);
+        let leaf_node                       = &self.nodes[leaf_node_idx.idx()];
+        let attributes                      = match leaf_node {
+            RopeNode::Leaf(_, _, attr)  => attr,
+            _                           => panic!("Found node was not a leaf node")
+        };
+        let mut extent                      = leaf_offset..(leaf_offset+leaf_node.len());
+
+        // Move to the right to find the full extent of the attributes
+        let mut last_node_idx = leaf_node_idx;
+        loop {
+            // Move to the right
+            let next_node_idx = match self.next_leaf_to_the_right(last_node_idx) {
+                Some(idx)   => idx,
+                None        => { break; }
+            };
+
+            // Check that the attributes match the previous node
+            let next_node = &self.nodes[next_node_idx.idx()];
+            match next_node {
+                RopeNode::Leaf(_, _, next_attr)  => {
+                    if !(**next_attr).eq(&**attributes) {
+                        break;
+                    }
+                }
+                _ => { debug_assert!(false, "Neighboring node was not a leaf node"); break; }
+            }
+
+            // Grow the extent if the attributes match
+            extent.end += next_node.len();
+
+            // Keep going from this next node
+            last_node_idx = next_node_idx;
+        }
+
+        (&**attributes, extent)
+    }
 }
 
 impl<Cell, Attribute> RopeMut for AttributedRope<Cell, Attribute> 

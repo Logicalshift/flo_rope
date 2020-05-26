@@ -19,4 +19,9 @@ pub trait Rope : Clone {
     /// Reads the cell values for a range in this rope
     ///
     fn read_cells<'a>(&'a self, range: Range<usize>) -> Box<dyn 'a+Iterator<Item=&Self::Cell>>;
+
+    ///
+    /// Returns the attributes set at the specified location and their extent
+    ///
+    fn read_attributes<'a>(&'a self, pos: usize) -> (&'a Self::Attribute, Range<usize>);
 }
