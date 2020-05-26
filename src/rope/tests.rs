@@ -4,13 +4,23 @@ use crate::rope::*;
 #[test]
 fn read_single_node() {
     let rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+
+    assert!(rope.len() == 8);
     assert!(rope.read_cells(0..8).cloned().collect::<Vec<_>>() == vec![1, 2, 3, 4, 5, 6, 7, 8]);
 }
 
 #[test]
 fn read_single_node_attributes() {
     let rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+
+    assert!(rope.len() == 8);
     assert!(rope.read_attributes(0) == (&(), 0..8));
+}
+
+#[test]
+fn read_single_node_attributes_from_middle() {
+    let rope = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+    assert!(rope.read_attributes(2) == (&(), 0..8));
 }
 
 #[test]
@@ -19,6 +29,7 @@ fn set_attributes() {
 
     rope.set_attributes(3..6, 2);
 
+    assert!(rope.len() == 8);
     assert!(rope.read_attributes(0) == (&0, 0..3));
     assert!(rope.read_attributes(3) == (&2, 3..6));
     assert!(rope.read_attributes(6) == (&0, 6..8));
@@ -29,6 +40,9 @@ fn replace_attributes() {
     let mut rope = AttributedRope::<_, i64>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
 
     rope.replace_attributes(3..6, vec![9, 10], 2);
+
+    assert!(rope.read_cells(0..rope.len()).cloned().collect::<Vec<_>>() == vec![1,2,3,8,10,7,8]);
+    assert!(rope.len() == 7);
 
     assert!(rope.read_attributes(0) == (&0, 0..3));
     assert!(rope.read_attributes(3) == (&2, 3..5));
@@ -53,6 +67,7 @@ fn read_after_full_split() {
     rope.split_at(6);
     rope.split_at(7);
 
+    assert!(rope.len() == 8);
     assert!(rope.read_cells(0..8).cloned().collect::<Vec<_>>() == vec![1, 2, 3, 4, 5, 6, 7, 8]);
 }
 
@@ -78,6 +93,7 @@ fn remove_middle() {
     rope.replace(1..7, vec![]);
 
     assert!(rope.read_cells(0..8).cloned().collect::<Vec<_>>() == vec![1, 8]);
+    assert!(rope.len() == 2);
 }
 
 #[test]
@@ -89,6 +105,7 @@ fn join_after_partial_split() {
     rope.replace(1..7, vec![]);
 
     assert!(rope.read_cells(0..8).cloned().collect::<Vec<_>>() == vec![1, 8]);
+    assert!(rope.len() == 2);
 }
 
 #[test]
@@ -106,6 +123,7 @@ fn join_after_full_split() {
     rope.replace(1..7, vec![]);
 
     assert!(rope.read_cells(0..8).cloned().collect::<Vec<_>>() == vec![1, 8]);
+    assert!(rope.len() == 2);
 }
 
 #[test]
@@ -119,6 +137,8 @@ fn insert_and_find() {
     assert!(rope.read_cells(4..8).cloned().collect::<Vec<_>>() == vec![9, 10, 11, 12]);
     assert!(rope.read_cells(8..12).cloned().collect::<Vec<_>>() == vec![5, 6, 7, 8]);
     assert!(rope.read_cells(0..4).cloned().collect::<Vec<_>>() == vec![1, 2, 3, 4]);
+
+    assert!(rope.len() == 12);
 }
 
 #[test]
@@ -140,4 +160,6 @@ fn insert_and_find_after_full_split() {
     assert!(rope.read_cells(4..8).cloned().collect::<Vec<_>>() == vec![9, 10, 11, 12]);
     assert!(rope.read_cells(8..12).cloned().collect::<Vec<_>>() == vec![5, 6, 7, 8]);
     assert!(rope.read_cells(0..4).cloned().collect::<Vec<_>>() == vec![1, 2, 3, 4]);
+
+    assert!(rope.len() == 12);
 }

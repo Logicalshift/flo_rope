@@ -485,14 +485,30 @@ Attribute:  PartialEq+Clone+Default {
     /// Returns the attributes set at the specified location and their extent
     ///
     fn read_attributes<'a>(&'a self, pos: usize) -> (&'a Attribute, Range<usize>) {
-        // Retrieve the node at the requested location
+        // Find the node at the requested location
         let (leaf_offset, leaf_node_idx)    = self.find_leaf(pos);
         let leaf_node                       = &self.nodes[leaf_node_idx.idx()];
+        let leaf_node_len                   = leaf_node.len();
+
+        // Move to the right if the position is at the end of the node
+        let (leaf_offset, leaf_node_idx)    = if pos >= leaf_offset + leaf_node_len {
+            match self.next_leaf_to_the_right(leaf_node_idx) {
+                Some(new_idx)   => (leaf_offset + leaf_node_len, new_idx),
+                None            => (leaf_offset, leaf_node_idx)
+            }
+        } else {
+            (leaf_offset, leaf_node_idx)
+        };
+
+        let leaf_node                       = &self.nodes[leaf_node_idx.idx()];
+        let leaf_node_len                   = leaf_node.len();
+
+        // Read the attributes of the node we found
         let attributes                      = match leaf_node {
             RopeNode::Leaf(_, _, attr)  => attr,
             _                           => panic!("Found node was not a leaf node")
         };
-        let mut extent                      = leaf_offset..(leaf_offset+leaf_node.len());
+        let mut extent                      = leaf_offset..(leaf_offset+leaf_node_len);
 
         // Move to the right to find the full extent of the attributes
         let mut last_node_idx = leaf_node_idx;
