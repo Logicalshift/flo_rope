@@ -222,6 +222,14 @@ Attribute:  PartialEq+Clone+Default {
         }
     }
 
+    /// 
+    /// Testing method that calls join_to_right on a specific leaf node
+    ///
+    #[cfg(test)]
+    pub (super) fn join_at(&mut self, pos: usize) {
+        self.join_to_right(self.find_leaf(pos).1);
+    }
+
     ///
     /// Joins a leaf node to the node immediately to the right
     ///
