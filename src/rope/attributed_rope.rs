@@ -621,7 +621,7 @@ Attribute:  PartialEq+Clone+Default {
                 leaf_node_idx   = match self.next_leaf_to_the_right(leaf_node_idx) { Some(idx) => idx, None => { break; } };
                 leaf_offset     += split_pos;
 
-            } else if remaining_range.end <= leaf_offset + leaf_len {
+            } else if remaining_range.end < leaf_offset + leaf_len {
                 // The attributes end before the end of the current leaf node, so split it and try again
                 let split_pos   = remaining_range.end - leaf_offset;
                 leaf_node_idx   = self.split(leaf_node_idx, split_pos);
