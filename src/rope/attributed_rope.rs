@@ -779,7 +779,7 @@ Attribute:  PartialEq+Clone+Default {
             self.replace(range, new_cells);
         } else {
             // Remove the range from the original node
-            self.replace_cells(leaf_node_idx, (range.start-leaf_offset)..(range.end-leaf_offset), iter::empty());
+            self.replace_leaf(range.clone(), leaf_offset, leaf_node_idx, iter::empty());
 
             // Create a blank node and insert the attributes there
             let empty_node_idx = self.insert_blank_node(leaf_node_idx, range.start - leaf_offset);
