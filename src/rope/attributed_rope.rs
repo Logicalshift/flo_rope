@@ -55,6 +55,41 @@ Attribute:  PartialEq+Clone+Default {
     }
 
     ///
+    /// Verifies that the tree is valid (lengths are correct, all empty nodes in free list)
+    ///
+    /// In non-test configurations, this is just a no-op, this just ensures that bugs are caught early
+    /// and close to the code that is broken.
+    ///
+    #[cfg(test)]
+    fn verify_tree(&self) { 
+        // Every empty node must be in the free nodes list
+        for node_idx in 0..self.nodes.len() {
+            if let RopeNode::Empty = &self.nodes[node_idx] {
+                assert!(self.free_nodes.contains(&node_idx));
+            }
+        }
+
+        // Every free node must be empty
+        for free_idx in self.free_nodes.iter() {
+            assert!(if let RopeNode::Empty = self.nodes[*free_idx] { true } else { false });
+        }
+
+        // All node lengths must be valid (sum of the child nodes for branchs)
+        for node_idx in 0..self.nodes.len() {
+            if let RopeNode::Branch(branch) = &self.nodes[node_idx] {
+                let left_len = self.nodes[branch.left.idx()].len();
+                let right_len = self.nodes[branch.right.idx()].len();
+
+                assert!(branch.length == left_len + right_len);
+            }
+        }
+     }
+
+    #[cfg(not(test))]
+    #[inline]
+    fn verify_tree(&self) { }
+
+    ///
     /// Creates a rope from a list of cells
     ///
     pub fn from<NewCells: IntoIterator<Item=Cell>>(cells: NewCells) -> AttributedRope<Cell, Attribute> {
@@ -128,6 +163,8 @@ Attribute:  PartialEq+Clone+Default {
                     parent: parent
                 });
 
+                self.verify_tree();
+
                 left_idx
             }
 
@@ -162,12 +199,16 @@ Attribute:  PartialEq+Clone+Default {
                         let lhs_idx = self.split(leaf_node_idx, split_index);
                         let rhs_idx = self.next_leaf_to_the_right(lhs_idx).expect("Split failed to create RHS leaf node");
 
+                        self.verify_tree();
+
                         rhs_idx
                     } else {
                         // Need to make two splits to divide the existing node
                         let lhs_idx     = self.split(leaf_node_idx, split_index);
                         let rhs_idx     = self.next_leaf_to_the_right(lhs_idx).expect("Split failed to create RHS leaf node");
                         let empty_leaf  = self.split(rhs_idx, 0);
+
+                        self.verify_tree();
 
                         empty_leaf
                     }
@@ -274,6 +315,8 @@ Attribute:  PartialEq+Clone+Default {
                 self.nodes[leaf_node_idx.idx()] = leaf_node;
             }
         }
+
+        self.verify_tree();
     }
 
     ///
@@ -308,6 +351,8 @@ Attribute:  PartialEq+Clone+Default {
                     parent_idx = None;
                 }
             }
+
+            self.verify_tree();
         } else {
             debug_assert!(false, "Tried to replace text in a leaf node");
         }
@@ -437,6 +482,8 @@ Attribute:  PartialEq+Clone+Default {
         if self.nodes[leaf_node_idx.idx()].len() == 0 {
             self.join_to_right(leaf_node_idx);
         }
+
+        self.verify_tree();
     }
 
     ///
