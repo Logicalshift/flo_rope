@@ -65,13 +65,13 @@ Attribute:  PartialEq+Clone+Default {
         // Every empty node must be in the free nodes list
         for node_idx in 0..self.nodes.len() {
             if let RopeNode::Empty = &self.nodes[node_idx] {
-                assert!(self.free_nodes.contains(&node_idx), why);
+                assert!(self.free_nodes.contains(&node_idx), "Empty node not in free list: {}", why);
             }
         }
 
         // Every free node must be empty
         for free_idx in self.free_nodes.iter() {
-            assert!(if let RopeNode::Empty = self.nodes[*free_idx] { true } else { false });
+            assert!(if let RopeNode::Empty = self.nodes[*free_idx] { true } else { false }, "Free node not empty: {}", why);
         }
 
         // All node lengths must be valid (sum of the child nodes for branchs)
@@ -80,7 +80,7 @@ Attribute:  PartialEq+Clone+Default {
                 let left_len = self.nodes[branch.left.idx()].len();
                 let right_len = self.nodes[branch.right.idx()].len();
 
-                assert!(branch.length == left_len + right_len, why);
+                assert!(branch.length == left_len + right_len, "Incorrect branch length: {}", why);
             }
         }
      }
