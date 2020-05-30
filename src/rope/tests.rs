@@ -220,3 +220,19 @@ fn append_at_end_of_attribute_range() {
     assert!(rope.read_attributes(3) == (&2, 3..7));
     assert!(rope.read_attributes(7) == (&0, 7..9));
 }
+
+#[test]
+fn replace_at_end_of_attribute_range() {
+    // If replace() is called at a point that is between two ranges, we take the attributes from the left rather than the right
+    let mut rope = AttributedRope::<_, i64>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
+
+    assert!(rope.len() == 8);
+    rope.replace_attributes(3..6, vec![9, 10], 2);
+    rope.replace(5..7, vec![11, 12]);
+
+    assert!(rope.len() == 7);
+    assert!(rope.read_cells(0..rope.len()).cloned().collect::<Vec<_>>() == vec![1,2,3,9,10,11,12]);
+
+    assert!(rope.read_attributes(0) == (&0, 0..3));
+    assert!(rope.read_attributes(3) == (&2, 3..7));
+}
