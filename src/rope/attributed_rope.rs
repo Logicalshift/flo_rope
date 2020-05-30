@@ -496,13 +496,12 @@ Attribute:  PartialEq+Clone+Default {
         // Get the initial leaf length
         let leaf_len    = self.nodes[leaf_node_idx.idx()].len();
         let leaf_pos    = absolute_range.start - leaf_offset;
-        let leaf_end    = leaf_offset + leaf_len;
 
         // Replace within the leaf node
         self.replace_cells(leaf_node_idx, (absolute_range.start-leaf_offset)..(absolute_range.end-leaf_offset), new_cells);
 
         // Move to the right in the tree to remove extra characters from the range in the event it overruns the leaf cell
-        if leaf_pos + absolute_range.len() > leaf_end {
+        if leaf_pos + absolute_range.len() > leaf_len {
             // Work out how many characters are remaining
             let mut remaining_to_right  = absolute_range.len() - (leaf_len - leaf_pos);
 
@@ -778,9 +777,6 @@ Attribute:  PartialEq+Clone+Default {
             // TODO: same optimisation as before
             self.replace(range, new_cells);
         } else {
-            // Remove the range from the original node
-            self.replace_leaf(range.clone(), leaf_offset, leaf_node_idx, iter::empty());
-
             // Create a blank node and insert the attributes there
             let empty_node_idx = self.insert_blank_node(leaf_node_idx, range.start - leaf_offset);
 
