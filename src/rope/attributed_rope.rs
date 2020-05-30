@@ -334,10 +334,11 @@ Attribute:  PartialEq+Clone+Default {
             if range.end > cells.len()      { range.end = cells.len(); }
 
             // Work out the length difference
-            let length_diff = (range.len() as i64) - (cells.len() as i64);
+            let old_length = cells.len() as i64;
 
             // Substitute in the new cells
             cells.splice(range, new_cells);
+            let length_diff = (cells.len() as i64) - old_length;
 
             // Update the lengths in the branches above this node
             let mut parent_idx = *parent_idx;
