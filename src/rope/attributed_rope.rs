@@ -61,11 +61,11 @@ Attribute:  PartialEq+Clone+Default {
     /// and close to the code that is broken.
     ///
     #[cfg(test)]
-    fn verify_tree(&self) { 
+    fn verify_tree(&self, why: &'static str) { 
         // Every empty node must be in the free nodes list
         for node_idx in 0..self.nodes.len() {
             if let RopeNode::Empty = &self.nodes[node_idx] {
-                assert!(self.free_nodes.contains(&node_idx));
+                assert!(self.free_nodes.contains(&node_idx), why);
             }
         }
 
@@ -80,14 +80,14 @@ Attribute:  PartialEq+Clone+Default {
                 let left_len = self.nodes[branch.left.idx()].len();
                 let right_len = self.nodes[branch.right.idx()].len();
 
-                assert!(branch.length == left_len + right_len);
+                assert!(branch.length == left_len + right_len, why);
             }
         }
      }
 
     #[cfg(not(test))]
     #[inline]
-    fn verify_tree(&self) { }
+    fn verify_tree(&self, _why: &str) { }
 
     ///
     /// Creates a rope from a list of cells
@@ -163,7 +163,7 @@ Attribute:  PartialEq+Clone+Default {
                     parent: parent
                 });
 
-                self.verify_tree();
+                self.verify_tree("Post-split");
 
                 left_idx
             }
@@ -199,7 +199,7 @@ Attribute:  PartialEq+Clone+Default {
                         let lhs_idx = self.split(leaf_node_idx, split_index);
                         let rhs_idx = self.next_leaf_to_the_right(lhs_idx).expect("Split failed to create RHS leaf node");
 
-                        self.verify_tree();
+                        self.verify_tree("insert_blank at end");
 
                         rhs_idx
                     } else {
@@ -208,7 +208,7 @@ Attribute:  PartialEq+Clone+Default {
                         let rhs_idx     = self.next_leaf_to_the_right(lhs_idx).expect("Split failed to create RHS leaf node");
                         let empty_leaf  = self.split(rhs_idx, 0);
 
-                        self.verify_tree();
+                        self.verify_tree("insert blank in middle");
 
                         empty_leaf
                     }
@@ -226,6 +226,8 @@ Attribute:  PartialEq+Clone+Default {
     /// Joins a leaf node to the node immediately to the right
     ///
     fn join_to_right(&mut self, leaf_node_idx: RopeNodeIndex) {
+        self.verify_tree("pre-join");
+
         // Fetch the node to the right (we do nothing if there's no node to the right)
         let right_node_idx = match self.next_leaf_to_the_right(leaf_node_idx) { Some(rhs) => rhs, None => { return; } };
 
@@ -316,13 +318,15 @@ Attribute:  PartialEq+Clone+Default {
             }
         }
 
-        self.verify_tree();
+        self.verify_tree("post-join");
     }
 
     ///
     /// Given a leaf-node, replaces a range of cells with some new values
     ///
     fn replace_cells<Cells: Iterator<Item=Cell>>(&mut self, leaf_node_idx: RopeNodeIndex, range: Range<usize>, new_cells: Cells) {
+        self.verify_tree("Pre replace_cells");
+
         if let RopeNode::Leaf(parent_idx, cells, _attributes) = &mut self.nodes[leaf_node_idx.idx()] {
             // Adjust the range to fit in the cell range
             let mut range = range;
@@ -352,7 +356,7 @@ Attribute:  PartialEq+Clone+Default {
                 }
             }
 
-            self.verify_tree();
+            self.verify_tree("Post replace cells");
         } else {
             debug_assert!(false, "Tried to replace text in a leaf node");
         }
@@ -483,7 +487,7 @@ Attribute:  PartialEq+Clone+Default {
             self.join_to_right(leaf_node_idx);
         }
 
-        self.verify_tree();
+        self.verify_tree("Post replace leaf");
     }
 
     ///
