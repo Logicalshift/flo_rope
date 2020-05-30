@@ -39,10 +39,11 @@ fn set_attributes() {
 fn replace_attributes() {
     let mut rope = AttributedRope::<_, i64>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
 
+    assert!(rope.len() == 8);
     rope.replace_attributes(3..6, vec![9, 10], 2);
 
-    assert!(rope.read_cells(0..rope.len()).cloned().collect::<Vec<_>>() == vec![1,2,3,8,10,7,8]);
     assert!(rope.len() == 7);
+    assert!(rope.read_cells(0..rope.len()).cloned().collect::<Vec<_>>() == vec![1,2,3,9,10,7,8]);
 
     assert!(rope.read_attributes(0) == (&0, 0..3));
     assert!(rope.read_attributes(3) == (&2, 3..5));
