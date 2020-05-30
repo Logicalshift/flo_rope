@@ -231,6 +231,43 @@ Attribute:  PartialEq+Clone+Default {
     }
 
     ///
+    /// Corrects the length of a branch node (and its parents if needed) by adding the lengths of its child nodes
+    ///
+    fn correct_branch_length(&mut self, branch_node_idx: RopeNodeIndex) {
+        let mut next_node = Some(branch_node_idx);
+
+        // Process the node and move to the parent
+        while let Some(current_node) = next_node {
+            match &self.nodes[current_node.idx()] {
+                RopeNode::Branch(branch) => { 
+                    // Fetch the current length of the branch
+                    let current_len = branch.length;
+
+                    // Calculate the 'actual' length of the branch based on its children
+                    let actual_len  = self.nodes[branch.left.idx()].len() + self.nodes[branch.right.idx()].len();
+
+                    // If the lengths differ, update the branch and move up the tree
+                    if actual_len != current_len {
+                        // Continue with the branch's parent
+                        next_node = branch.parent;
+
+                        // Update the branch
+                        match &mut self.nodes[current_node.idx()] {
+                            RopeNode::Branch(branch)    => branch.length = actual_len,
+                            _                           => unreachable!()
+                        }
+                    } else {
+                        // No change was needed, nodes have accurate lengths
+                        next_node = None;
+                    }
+                }
+
+                _ => { next_node = None; }
+            }
+        }
+    }
+
+    ///
     /// Joins a leaf node to the node immediately to the right
     ///
     fn join_to_right(&mut self, leaf_node_idx: RopeNodeIndex) {
@@ -249,7 +286,7 @@ Attribute:  PartialEq+Clone+Default {
                 let parent_node_idx = match parent_node_idx { Some(idx) => idx, None => { return; } };
 
                 // Take the parent node too
-                let parent_node = self.nodes[parent_node_idx.idx()].take();
+                let parent_node     = self.nodes[parent_node_idx.idx()].take();
 
                 // Should be a branch with one branch being our leaf: pick the other side of the branch
                 let (remaining_node_idx, grandparent_node_idx) = match parent_node {
@@ -303,13 +340,16 @@ Attribute:  PartialEq+Clone+Default {
                 // Join the text if the original leaf node is non-empty
                 if lhs_cells.len() > 0 {
                     match &mut self.nodes[right_node_idx.idx()] {
-                        RopeNode::Leaf(_, rhs_cells, _) => {
+                        RopeNode::Leaf(parent_idx, rhs_cells, _) => {
                             // The LHS cells are at the start of the new node, so swap them into the existing node
                             let mut cells = lhs_cells;
                             mem::swap(&mut cells, rhs_cells);
 
                             // After the swap, lhs_cells contain the cells to append to the end
                             rhs_cells.extend(cells);
+
+                            // Fix this node's length
+                            parent_idx.map(|parent_idx| self.correct_branch_length(parent_idx));
                         }
 
                         _ => {
@@ -317,6 +357,9 @@ Attribute:  PartialEq+Clone+Default {
                         }
                     }
                 }
+
+                // Fix the grandparent node length
+                grandparent_node_idx.map(|grandparent_node_idx| self.correct_branch_length(grandparent_node_idx));
             }
 
             leaf_node => {
