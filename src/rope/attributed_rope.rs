@@ -707,7 +707,7 @@ Attribute:  PartialEq+Clone+Default {
             // remaining_range.start must be within the current leaf node
             if (**leaf_attr).eq(&*new_attributes) {
                 // This region already has the correct attributes, so move to the right
-                remaining_range.start += leaf_len;
+                remaining_range.start = leaf_offset + leaf_len;
                 leaf_offset     += leaf_len;
                 leaf_node_idx   = match self.next_leaf_to_the_right(leaf_node_idx) { Some(idx) => idx, None => { break; } };
 
@@ -736,7 +736,7 @@ Attribute:  PartialEq+Clone+Default {
                 }
 
                 // Move to the right to continue setting attributes
-                remaining_range.start += leaf_len;
+                remaining_range.start = leaf_offset + leaf_len;
                 leaf_offset     += leaf_len;
                 leaf_node_idx   = match self.next_leaf_to_the_right(leaf_node_idx) { Some(idx) => idx, None => { break; } };
 
