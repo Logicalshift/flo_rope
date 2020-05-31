@@ -44,7 +44,7 @@ fn set_attributes_on_neighboring_ranges() {
 
     assert!(rope.len() == 3);
     assert!(rope.read_attributes(0) == (&0, 0..1));
-    assert!(rope.read_attributes(1) == (&1, 1..2));
+    assert!(rope.read_attributes(1) == (&1, 1..3));
     assert!(rope.read_attributes(2) != (&0, 2..3));
     assert!(rope.read_attributes(2) == (&1, 2..3));
 }
@@ -58,9 +58,8 @@ fn set_attributes_overlapping_ranges() {
 
     assert!(rope.len() == 6);
     assert!(rope.read_attributes(0) == (&0, 0..1));
-    assert!(rope.read_attributes(1) == (&1, 1..3));
-    assert!(rope.read_attributes(3) == (&1, 3..4));
-    assert!(rope.read_attributes(4) == (&0, 4..5));
+    assert!(rope.read_attributes(1) == (&1, 1..4));
+    assert!(rope.read_attributes(4) == (&0, 4..6));
 }
 
 #[test]
