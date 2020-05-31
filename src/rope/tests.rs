@@ -242,3 +242,17 @@ fn utf_from_string() {
     let rope = AttributedRope::<_, ()>::from_str("Test");
     assert!(rope.to_string_lossy() == "Test".to_string());
 }
+
+#[test]
+fn extend_rope() {
+    let mut rope = AttributedRope::<_, ()>::from(vec![1, 2, 3]);
+    rope.extend(vec![4,5,6]);
+    assert!(rope.read_cells(0..6).cloned().collect::<Vec<_>>() == vec![1,2,3,4,5,6]);
+}
+
+#[test]
+fn extend_rope_references() {
+    let mut rope = AttributedRope::<_, ()>::from(vec![1, 2, 3]);
+    rope.extend(&vec![4,5,6]);
+    assert!(rope.read_cells(0..6).cloned().collect::<Vec<_>>() == vec![1,2,3,4,5,6]);
+}
