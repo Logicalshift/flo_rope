@@ -36,6 +36,20 @@ fn set_attributes() {
 }
 
 #[test]
+fn set_attributes_on_neighboring_ranges() {
+    let mut rope = AttributedRope::<_, i64>::from(vec![1, 2, 3]);
+
+    rope.set_attributes(1..2, 1);
+    rope.set_attributes(2..3, 1);
+
+    assert!(rope.len() == 3);
+    assert!(rope.read_attributes(0) == (&0, 0..1));
+    assert!(rope.read_attributes(1) == (&1, 1..2));
+    assert!(rope.read_attributes(2) != (&0, 2..3));
+    assert!(rope.read_attributes(2) == (&1, 2..3));
+}
+
+#[test]
 fn replace_attributes() {
     let mut rope = AttributedRope::<_, i64>::from(vec![1, 2, 3, 4, 5, 6, 7, 8]);
 
