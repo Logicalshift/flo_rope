@@ -60,7 +60,7 @@ Attribute:  PartialEq+Clone+Default {
         // Compare attributes (coverage of each attribute may vary between the two styles)
         let len                         = self.len();
         let (mut attr_a, mut range_a)   = self.read_attributes(0);
-        let (mut attr_b, mut range_b)   = self.read_attributes(0);
+        let (mut attr_b, mut range_b)   = other.read_attributes(0);
 
         loop {
             // Ranges should never be 0-length
@@ -74,7 +74,7 @@ Attribute:  PartialEq+Clone+Default {
             }
 
             if range_a.start >= range_b.end || range_b.start == range_b.end {
-                let (new_attr, new_range) = self.read_attributes(range_a.start);
+                let (new_attr, new_range) = other.read_attributes(range_a.start);
                 attr_b  = new_attr;
                 range_b = new_range;
             }
@@ -95,7 +95,7 @@ Attribute:  PartialEq+Clone+Default {
                 attr_a  = new_attr;
                 range_a = new_range;
             } else {
-                let (new_attr, new_range) = self.read_attributes(range_b.end);
+                let (new_attr, new_range) = other.read_attributes(range_b.end);
                 attr_b  = new_attr;
                 range_b = new_range;
             }
