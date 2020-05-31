@@ -256,3 +256,78 @@ fn extend_rope_references() {
     rope.extend(&vec![4,5,6]);
     assert!(rope.read_cells(0..6).cloned().collect::<Vec<_>>() == vec![1,2,3,4,5,6]);
 }
+
+#[test]
+fn equal_cells() {
+    let rope1 = AttributedRope::<_, ()>::from(vec![1, 2, 3]);
+    let rope2 = AttributedRope::<_, ()>::from(vec![1, 2, 3]);
+
+    assert!(rope1 == rope2);
+}
+
+#[test]
+fn equal_attributes() {
+    let mut rope1 = AttributedRope::<_, i64>::from(vec![1, 2, 3]);
+    let mut rope2 = AttributedRope::<_, i64>::from(vec![1, 2, 3]);
+
+    rope1.set_attributes(1..3, 1);
+    rope2.set_attributes(1..3, 1);
+
+    assert!(rope1 == rope2);
+    assert!(rope2 == rope1);
+}
+
+#[test]
+fn equal_attributes_ranges() {
+    let mut rope1 = AttributedRope::<_, i64>::from(vec![1, 2, 3]);
+    let mut rope2 = AttributedRope::<_, i64>::from(vec![1, 2, 3]);
+
+    rope1.set_attributes(1..3, 1);
+    rope2.set_attributes(1..2, 1);
+    rope2.set_attributes(2..3, 1);
+
+    assert!(rope1 == rope2);
+    assert!(rope2 == rope1);
+}
+
+#[test]
+fn unequal_cells() {
+    let rope1 = AttributedRope::<_, ()>::from(vec![1, 2, 3]);
+    let rope2 = AttributedRope::<_, ()>::from(vec![1, 2, 4]);
+
+    assert!(rope1 != rope2);
+    assert!(rope2 != rope1);
+}
+
+#[test]
+fn unequal_length() {
+    let rope1 = AttributedRope::<_, ()>::from(vec![1, 2, 3]);
+    let rope2 = AttributedRope::<_, ()>::from(vec![1, 2, 3, 4]);
+
+    assert!(rope1 != rope2);
+    assert!(rope2 != rope1);
+}
+
+#[test]
+fn unequal_attribute_ranges() {
+    let mut rope1 = AttributedRope::<_, i64>::from(vec![1, 2, 3]);
+    let mut rope2 = AttributedRope::<_, i64>::from(vec![1, 2, 3]);
+
+    rope1.set_attributes(1..3, 1);
+    rope2.set_attributes(1..2, 1);
+
+    assert!(rope1 != rope2);
+    assert!(rope2 != rope1);
+}
+
+#[test]
+fn unequal_attribute_values() {
+    let mut rope1 = AttributedRope::<_, i64>::from(vec![1, 2, 3]);
+    let mut rope2 = AttributedRope::<_, i64>::from(vec![1, 2, 3]);
+
+    rope1.set_attributes(1..3, 1);
+    rope2.set_attributes(1..3, 2);
+
+    assert!(rope1 != rope2);
+    assert!(rope2 != rope1);
+}
