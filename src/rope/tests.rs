@@ -236,3 +236,9 @@ fn replace_at_end_of_attribute_range() {
     assert!(rope.read_attributes(0) == (&0, 0..3));
     assert!(rope.read_attributes(3) == (&2, 3..7));
 }
+
+#[test]
+fn utf_from_string() {
+    let rope = AttributedRope::<_, ()>::from_str("Test");
+    assert!(rope.to_string_lossy() == "Test".to_string());
+}

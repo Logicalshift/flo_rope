@@ -793,3 +793,12 @@ Attribute:  PartialEq+Clone+Default {
         }
     }
 }
+
+impl<Cell, Attribute> Default for AttributedRope<Cell, Attribute>
+where   
+Cell:       Clone, 
+Attribute:  PartialEq+Clone+Default {
+    fn default() -> AttributedRope<Cell, Attribute> {
+        Self::new()
+    }
+}
