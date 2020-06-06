@@ -9,6 +9,8 @@
 
 pub mod api;
 pub mod rope;
+pub mod stream_rope;
 
 pub use crate::api::*;
 pub use crate::rope::*;
+pub use crate::stream_rope::*;
