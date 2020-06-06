@@ -11,7 +11,7 @@ use std::ops::{Range};
 pub struct PushRope<BaseRope, PushFn> 
 where 
 BaseRope:   RopeMut, 
-PushFn:     Clone+Fn(RopeAction<BaseRope::Cell, BaseRope::Attribute>) -> () {
+PushFn:     Fn(RopeAction<BaseRope::Cell, BaseRope::Attribute>) -> () {
     /// The rope that this will push updates for
     rope:       BaseRope,
 
@@ -22,7 +22,7 @@ PushFn:     Clone+Fn(RopeAction<BaseRope::Cell, BaseRope::Attribute>) -> () {
 impl<BaseRope, PushFn> Rope for PushRope<BaseRope, PushFn>
 where 
 BaseRope:   RopeMut, 
-PushFn:     Clone+Fn(RopeAction<BaseRope::Cell, BaseRope::Attribute>) -> () {
+PushFn:     Fn(RopeAction<BaseRope::Cell, BaseRope::Attribute>) -> () {
     /// A 'cell' or character in the rope. For a UTF-8 rope this could be `u8`, for xample
     type Cell = BaseRope::Cell;
 
