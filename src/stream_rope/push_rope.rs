@@ -169,3 +169,33 @@ PushFn:     Fn(RopeAction<BaseRope::Cell, BaseRope::Attribute>) -> () {
         (self.push_fn)(RopeAction::ReplaceAttributes(range, new_cells, new_attributes));
     }
 }
+
+impl<BaseRope, PushFn> PushBeforeRope<BaseRope, PushFn>
+where 
+BaseRope:   RopeMut, 
+PushFn:     Fn(&RopeAction<BaseRope::Cell, BaseRope::Attribute>) -> () {
+    ///
+    /// Creates a new push rope from a base rope and function
+    ///
+    pub fn from(rope: BaseRope, update_fn: PushFn) -> PushBeforeRope<BaseRope, PushFn> {
+        PushBeforeRope {
+            rope:       rope,
+            push_fn:    update_fn
+        }
+    }
+}
+
+impl<BaseRope, PushFn> PushAfterRope<BaseRope, PushFn>
+where 
+BaseRope:   RopeMut, 
+PushFn:     Fn(RopeAction<BaseRope::Cell, BaseRope::Attribute>) -> () {
+    ///
+    /// Creates a new push rope from a base rope and function
+    ///
+    pub fn from(rope: BaseRope, update_fn: PushFn) -> PushAfterRope<BaseRope, PushFn> {
+        PushAfterRope {
+            rope:       rope,
+            push_fn:    update_fn
+        }
+    }
+}
