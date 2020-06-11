@@ -1,5 +1,7 @@
 use crate::api::*;
 
+use std::ops::{Range};
+
 ///
 /// A pull rope will notify its function when changes are available and will gather changes into
 /// a single batch when they're 'pulled' from the rope. This is useful in circumstances where
@@ -33,5 +35,40 @@ PullFn:     Fn() -> () {
             rope:       rope,
             pull_fn:    pull_fn
         }
+    }
+}
+
+impl<BaseRope, PushFn> Rope for PullRope<BaseRope, PushFn>
+where 
+BaseRope:   RopeMut, 
+PushFn:     Fn() -> () {
+    /// A 'cell' or character in the rope. For a UTF-8 rope this could be `u8`, for xample
+    type Cell = BaseRope::Cell;
+
+    /// The type of an attribute in the rope. Every cell range has an attribute attached to it
+    type Attribute = BaseRope::Attribute;
+
+    ///
+    /// Returns the number of cells in this rope
+    ///
+    #[inline]
+    fn len(&self) -> usize {
+        self.rope.len()
+    }
+
+    ///
+    /// Reads the cell values for a range in this rope
+    ///
+    #[inline]
+    fn read_cells<'a>(&'a self, range: Range<usize>) -> Box<dyn 'a+Iterator<Item=&Self::Cell>> {
+        self.rope.read_cells(range)
+    }
+
+    ///
+    /// Returns the attributes set at the specified location and their extent
+    ///
+    #[inline]
+    fn read_attributes<'a>(&'a self, pos: usize) -> (&'a Self::Attribute, Range<usize>) {
+        self.rope.read_attributes(pos)
     }
 }
