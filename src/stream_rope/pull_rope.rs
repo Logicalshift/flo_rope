@@ -3,6 +3,17 @@ use crate::api::*;
 use std::ops::{Range};
 
 ///
+/// Indicates a range of values that has been updated since the last pull from a rope
+///
+struct RopePendingChange {
+    /// Where these values were originally in the rope
+    orignal_range: Range<usize>,
+
+    /// Where the replacement values appear in the updated rope
+    new_range: Range<usize>
+}
+
+///
 /// A pull rope will notify its function when changes are available and will gather changes into
 /// a single batch when they're 'pulled' from the rope. This is useful in circumstances where
 /// updates are scheduled but not performed immediately, for example when updating a UI. Pulling
