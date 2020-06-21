@@ -7,7 +7,7 @@ use std::ops::{Range};
 ///
 struct RopePendingChange {
     /// Where these values were originally in the rope
-    orignal_range: Range<usize>,
+    original_range: Range<usize>,
 
     /// Where the replacement values appear in the updated rope
     new_range: Range<usize>
@@ -28,7 +28,10 @@ PullFn:     Fn() -> () {
     rope: BaseRope,
 
     /// A function that is called whenever the state of this rope changes from 'no changes' to 'changes waiting to be pulled'
-    pull_fn: PullFn
+    pull_fn: PullFn,
+
+    /// The changes that have ocurred since the last time this rope was pulled from (kept in ascending order)
+    changes: Vec<RopePendingChange>
 }
 
 impl<BaseRope, PullFn> PullRope<BaseRope, PullFn>
@@ -44,8 +47,40 @@ PullFn:     Fn() -> () {
     pub fn from(rope: BaseRope, pull_fn: PullFn) -> PullRope<BaseRope, PullFn> {
         PullRope {
             rope:       rope,
-            pull_fn:    pull_fn
+            pull_fn:    pull_fn,
+            changes:    vec![]
         }
+    }
+
+    ///
+    /// Returns the index in the changes list that is either before or just after the specified position,
+    /// along with the difference in position from the original at that point
+    ///
+    fn find_change(&self, pos: usize) -> (usize, i64) {
+        let mut diff = 0;
+
+        // Changes can only replace or insert, they can't move things around: this means that both
+        // the 'old' and 'new' ranges will always be in order.
+        for idx in 0..self.changes.len() {
+            let change = &self.changes[idx];
+
+            if change.new_range.start <= pos && change.new_range.end > pos {
+                // Position is in the range of this change
+                return (idx, diff);
+            } else if change.new_range.start > pos {
+                // We've passed the change
+                return (idx, diff);
+            }
+
+            // Update the difference in position from this point
+            let old_len = change.original_range.len() as i64;
+            let new_len = change.new_range.len() as i64;
+
+            diff += old_len - new_len;
+        }
+
+        // Change not found: must be beyond the end of the change range
+        (self.changes.len(), diff)
     }
 }
 
