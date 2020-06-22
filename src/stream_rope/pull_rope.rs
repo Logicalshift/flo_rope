@@ -82,6 +82,30 @@ PullFn:     Fn() -> () {
         // Change not found: must be beyond the end of the change range
         (self.changes.len(), diff)
     }
+
+    ///
+    /// Marks a region as changed for the next pull request
+    ///
+    fn mark_change(&mut self, original_range: Range<usize>, new_length: usize) {
+        // Find the existing change corresponding to the start of the range
+        let (change_idx, diff) = self.find_change(original_range.start);
+
+        // If the index is beyond the end of the existing changes, then just add the edit range to the end
+        if change_idx >= self.changes.len() {
+            // Adjust the original range to match the new range
+            let original_start  = (original_range.start as i64) + diff;
+            let original_end    = (original_range.end as i64) + diff;
+            let original_start  = original_start as usize;
+            let original_end    = original_end as usize;
+
+            self.changes.push(RopePendingChange {
+                original_range: original_start..original_end,
+                new_range:      original_range.start..(original_range.start+new_length)
+            });
+        } else {
+            unimplemented!()
+        }
+    }
 }
 
 impl<BaseRope, PushFn> Rope for PullRope<BaseRope, PushFn>
@@ -116,5 +140,37 @@ PushFn:     Fn() -> () {
     #[inline]
     fn read_attributes<'a>(&'a self, pos: usize) -> (&'a Self::Attribute, Range<usize>) {
         self.rope.read_attributes(pos)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::*;
+    use super::*;
+
+    #[test]
+    fn add_initial_change_range() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.mark_change(4..10, 15);
+
+        assert!(rope.changes[0].original_range == (4..10));
+        assert!(rope.changes[0].new_range == (4..19));
+        assert!(rope.changes.len() == 1);
+    }
+
+    #[test]
+    fn add_multiple_changes_at_end() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.mark_change(4..10, 15);
+        rope.mark_change(20..25, 5);
+
+        assert!(rope.changes[1].original_range == (11..16));
+        assert!(rope.changes[1].new_range == (20..25));
+
+        assert!(rope.changes[0].original_range == (4..10));
+        assert!(rope.changes[0].new_range == (4..19));
+        assert!(rope.changes.len() == 2);
     }
 }
