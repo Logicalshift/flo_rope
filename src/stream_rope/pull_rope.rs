@@ -113,7 +113,19 @@ PullFn:     Fn() -> () {
 
                 let new_end = remaining_range.start + remaining_length;
                 if new_end < change.new_range.end {
-                    // New change is entirely within the existing change (so there's nothing to do: this is a range already marked as changed)
+                    // New change is entirely within the existing change
+                    let length_diff = (remaining_range.len() as i64) - (new_length as i64);
+
+                    if length_diff != 0 {
+                        // Adjust the length of the changed range
+                        self.changes[change_idx].new_range.end = (self.changes[change_idx].new_range.end as i64 - length_diff) as usize;
+
+                        // Adjust the position of the following ranges
+                        for move_idx in (change_idx+1)..self.changes.len() {
+                            self.changes[move_idx].new_range.start = (self.changes[move_idx].new_range.start as i64 - length_diff) as usize;
+                            self.changes[move_idx].new_range.end = (self.changes[move_idx].new_range.end as i64 - length_diff) as usize;
+                        }
+                    }
                     break;
                 } else {
                     // Continue with the following range
@@ -225,13 +237,15 @@ mod test {
 
         rope.mark_change(4..10, 15);
         rope.mark_change(20..25, 5);
+
         rope.mark_change(6..12, 5);
+
+        assert!(rope.changes[0].original_range == (4..10));
+        assert!(rope.changes[0].new_range == (4..18));
 
         assert!(rope.changes[1].original_range == (11..16));
         assert!(rope.changes[1].new_range == (19..24));
 
-        assert!(rope.changes[0].original_range == (4..10));
-        assert!(rope.changes[0].new_range == (4..18));
         assert!(rope.changes.len() == 2);
     }
 
