@@ -107,7 +107,7 @@ PullFn:     Fn() -> () {
                 });
 
                 break;
-            } else if self.changes[change_idx].new_range.start < remaining_range.start {
+            } else if self.changes[change_idx].new_range.start <= remaining_range.start {
                 // We overlap with an existing range
                 let change = &self.changes[change_idx];
 
