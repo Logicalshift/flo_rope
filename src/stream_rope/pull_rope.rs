@@ -88,22 +88,51 @@ PullFn:     Fn() -> () {
     ///
     fn mark_change(&mut self, original_range: Range<usize>, new_length: usize) {
         // Find the existing change corresponding to the start of the range
-        let (change_idx, diff) = self.find_change(original_range.start);
+        let (mut change_idx, mut diff)  = self.find_change(original_range.start);
+        let mut remaining_range         = original_range;
+        let mut remaining_length        = new_length;
 
-        // If the index is beyond the end of the existing changes, then just add the edit range to the end
-        if change_idx >= self.changes.len() {
-            // Adjust the original range to match the new range
-            let original_start  = (original_range.start as i64) + diff;
-            let original_end    = (original_range.end as i64) + diff;
-            let original_start  = original_start as usize;
-            let original_end    = original_end as usize;
+        loop {
+            // If the index is beyond the end of the existing changes, then just add the edit range to the end
+            if change_idx >= self.changes.len() {
+                // Adjust the original range to match the new range
+                let original_start  = (remaining_range.start as i64) + diff;
+                let original_end    = (remaining_range.end as i64) + diff;
+                let original_start  = original_start as usize;
+                let original_end    = original_end as usize;
 
-            self.changes.push(RopePendingChange {
-                original_range: original_start..original_end,
-                new_range:      original_range.start..(original_range.start+new_length)
-            });
-        } else {
-            unimplemented!()
+                self.changes.push(RopePendingChange {
+                    original_range: original_start..original_end,
+                    new_range:      remaining_range.start..(remaining_range.start+remaining_length)
+                });
+
+                break;
+            } else if self.changes[change_idx].new_range.start < remaining_range.start {
+                // We overlap with an existing range
+                let change = &self.changes[change_idx];
+
+                let new_end = remaining_range.start + remaining_length;
+                if new_end < change.new_range.end {
+                    // New change is entirely within the existing change (so there's nothing to do: this is a range already marked as changed)
+                    break;
+                } else {
+                    // Continue with the following range
+                    let used_length = change.new_range.end - remaining_range.start;
+
+                    remaining_range.start   += used_length;
+                    remaining_length        -= used_length;
+
+                    // New range will be overlapping or before the next change
+                    let old_len = change.original_range.len() as i64;
+                    let new_len = change.new_range.len() as i64;
+
+                    diff        += old_len - new_len;
+                    change_idx  += 1;
+                }
+            } else {
+                // The range does not overlap an existing range
+                unimplemented!()
+            }
         }
     }
 }
@@ -171,6 +200,54 @@ mod test {
 
         assert!(rope.changes[0].original_range == (4..10));
         assert!(rope.changes[0].new_range == (4..19));
+        assert!(rope.changes.len() == 2);
+    }
+
+    #[test]
+    fn add_overlapping_range_with_no_size_change() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.mark_change(4..10, 15);
+        rope.mark_change(20..25, 5);
+        rope.mark_change(6..11, 5);
+
+        assert!(rope.changes[1].original_range == (11..16));
+        assert!(rope.changes[1].new_range == (20..25));
+
+        assert!(rope.changes[0].original_range == (4..10));
+        assert!(rope.changes[0].new_range == (4..19));
+        assert!(rope.changes.len() == 2);
+    }
+
+    #[test]
+    fn add_overlapping_range_with_size_change() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.mark_change(4..10, 15);
+        rope.mark_change(20..25, 5);
+        rope.mark_change(6..12, 5);
+
+        assert!(rope.changes[1].original_range == (11..16));
+        assert!(rope.changes[1].new_range == (19..24));
+
+        assert!(rope.changes[0].original_range == (4..10));
+        assert!(rope.changes[0].new_range == (4..18));
+        assert!(rope.changes.len() == 2);
+    }
+
+    #[test]
+    fn add_overlapping_range_partially_at_end() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.mark_change(4..10, 15);
+        rope.mark_change(4..30, 20);
+
+        assert!(rope.changes[0].original_range == (4..10));
+        assert!(rope.changes[0].new_range == (4..19));
+
+        assert!(rope.changes[1].original_range == (10..20));
+        assert!(rope.changes[1].new_range == (19..24));
+
         assert!(rope.changes.len() == 2);
     }
 }
