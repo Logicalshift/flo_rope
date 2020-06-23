@@ -259,7 +259,7 @@ mod test {
         assert!(rope.changes[0].original_range == (4..10));
         assert!(rope.changes[0].new_range == (4..19));
 
-        assert!(rope.changes[1].original_range == (10..20));
+        assert!(rope.changes[1].original_range == (10..21));
         assert!(rope.changes[1].new_range == (19..24));
 
         assert!(rope.changes.len() == 2);
