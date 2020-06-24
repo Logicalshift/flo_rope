@@ -114,7 +114,7 @@ PullFn:     Fn() -> () {
                 let new_end = remaining_range.start + remaining_length;
                 if new_end < change.new_range.end {
                     // New change is entirely within the existing change
-                    let length_diff = (remaining_range.len() as i64) - (new_length as i64);
+                    let length_diff = (remaining_range.len() as i64) - (remaining_length as i64);
 
                     if length_diff != 0 {
                         // Adjust the length of the changed range
@@ -143,7 +143,40 @@ PullFn:     Fn() -> () {
                 }
             } else {
                 // The range does not overlap an existing range
-                unimplemented!()
+                let next_range_start = if change_idx < self.changes.len() {
+                    self.changes[change_idx].new_range.start
+                } else {
+                    usize::MAX
+                };
+
+                if next_range_start >= remaining_range.end {
+                    // If the next range fits within the gap, then insert it and stop
+                    let original_start  = (remaining_range.start as i64) + diff;
+                    let original_end    = (remaining_range.end as i64) + diff;
+                    let original_start  = original_start as usize;
+                    let original_end    = original_end as usize;
+
+                    self.changes.insert(change_idx, RopePendingChange {
+                        original_range: original_start..original_end,
+                        new_range:      remaining_range.start..(remaining_range.start+remaining_length)
+                    });
+
+                    // New change is entirely within the existing change
+                    let length_diff = (remaining_range.len() as i64) - (remaining_length as i64);
+
+                    if length_diff != 0 {
+                        // Adjust the position of the following ranges
+                        for move_idx in (change_idx+1)..self.changes.len() {
+                            self.changes[move_idx].new_range.start = (self.changes[move_idx].new_range.start as i64 - length_diff) as usize;
+                            self.changes[move_idx].new_range.end = (self.changes[move_idx].new_range.end as i64 - length_diff) as usize;
+                        }
+                    }
+
+                    break;
+                } else {
+                    // Fill in as much as possible from the gap and continue from here
+                    unimplemented!()
+                }
             }
         }
     }
@@ -282,5 +315,54 @@ mod test {
         assert!(rope.changes[0].original_range == (5..10));
         assert!(rope.changes[0].new_range == (5..20));
         assert!(rope.changes.len() == 3);
+    }
+
+    #[test]
+    fn add_range_in_gap() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.mark_change(5..10, 10);
+        rope.mark_change(20..25, 10);
+        rope.mark_change(15..20, 10);
+
+        assert!(rope.changes[1].original_range == (10..15));
+        assert!(rope.changes[1].new_range == (15..25));
+
+        assert!(rope.changes[2].original_range == (15..20));
+        assert!(rope.changes[2].new_range == (25..35));
+
+        assert!(rope.changes[0].original_range == (5..10));
+        assert!(rope.changes[0].new_range == (5..15));
+        assert!(rope.changes.len() == 3);
+    }
+
+    #[test]
+    fn add_range_overlapping_gap() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.mark_change(5..10, 10);
+        rope.mark_change(20..25, 10);
+        rope.mark_change(5..20, 20);
+
+        assert!(rope.changes[1].original_range == (10..15));
+        assert!(rope.changes[1].new_range == (15..25));
+
+        assert!(rope.changes[2].original_range == (15..20));
+        assert!(rope.changes[2].new_range == (25..35));
+
+        assert!(rope.changes[0].original_range == (5..10));
+        assert!(rope.changes[0].new_range == (5..15));
+        assert!(rope.changes.len() == 3);
+    }
+
+    #[test]
+    fn add_range_with_gap_between_existing_ranges() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.mark_change(5..10, 10);
+        rope.mark_change(20..25, 5);
+        rope.mark_change(5..30, 40);
+
+        unimplemented!()
     }
 }
