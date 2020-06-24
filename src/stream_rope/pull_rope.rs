@@ -175,7 +175,19 @@ PullFn:     Fn() -> () {
                     break;
                 } else {
                     // Fill in as much as possible from the gap and continue from here
-                    unimplemented!()
+                    let gap_length      = next_range_start - remaining_range.start;
+                    let original_start  = (remaining_range.start as i64) + diff;
+                    let original_start  = original_start as usize;
+                    let gap_end         = original_start + gap_length;
+
+                    self.changes.insert(change_idx, RopePendingChange {
+                        original_range: original_start..gap_end,
+                        new_range:      remaining_range.start..(remaining_range.start+gap_length)
+                    });
+
+                    remaining_range.start   += gap_length;
+                    remaining_length        -= gap_length;
+                    change_idx              += 1;
                 }
             }
         }
@@ -363,6 +375,17 @@ mod test {
         rope.mark_change(20..25, 5);
         rope.mark_change(5..30, 40);
 
-        unimplemented!()
+        assert!(rope.changes[1].original_range == (10..15));
+        assert!(rope.changes[1].new_range == (15..20));
+
+        assert!(rope.changes[2].original_range == (15..20));
+        assert!(rope.changes[2].new_range == (20..25));
+
+        assert!(rope.changes[3].original_range == (20..25));
+        assert!(rope.changes[3].new_range == (25..45));
+
+        assert!(rope.changes[0].original_range == (5..10));
+        assert!(rope.changes[0].new_range == (5..15));
+        assert!(rope.changes.len() == 4);
     }
 }
