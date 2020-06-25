@@ -196,14 +196,20 @@ PullFn:     Fn() -> () {
                     let original_start  = original_start as usize;
                     let gap_end         = original_start + gap_length;
 
-                    self.changes.insert(change_idx, RopePendingChange {
-                        original_range: original_start..gap_end,
-                        new_range:      remaining_range.start..(remaining_range.start+gap_length)
-                    });
+                    if gap_length <= remaining_length {
+                        // The new range covers the entire gap
+                        self.changes.insert(change_idx, RopePendingChange {
+                            original_range: original_start..gap_end,
+                            new_range:      remaining_range.start..(remaining_range.start+gap_length)
+                        });
 
-                    remaining_range.start   += gap_length;
-                    remaining_length        -= gap_length.min(remaining_length);
-                    change_idx              += 1;
+                        remaining_range.start   += gap_length;
+                        remaining_length        -= gap_length;
+                        change_idx              += 1;
+                    } else {
+                        // The new range needs to shrink the gap
+                        unimplemented!()
+                    }
                 }
             }
         }
