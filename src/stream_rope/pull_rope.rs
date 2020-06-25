@@ -202,7 +202,7 @@ PullFn:     Fn() -> () {
                     });
 
                     remaining_range.start   += gap_length;
-                    remaining_length        -= gap_length;
+                    remaining_length        -= gap_length.min(remaining_length);
                     change_idx              += 1;
                 }
             }
