@@ -114,19 +114,35 @@ PullFn:     Fn() -> () {
                 let new_end = remaining_range.start + remaining_length;
                 if new_end < change.new_range.end {
                     // New change is entirely within the existing change
-                    let length_diff = (remaining_range.len() as i64) - (remaining_length as i64);
+                    let max_diff        = change.new_range.len() as i64;
+                    let length_diff     = (remaining_range.len() as i64) - (remaining_length as i64);
+                    let length_change   = max_diff.min(length_diff);
 
                     if length_diff != 0 {
                         // Adjust the length of the changed range
-                        self.changes[change_idx].new_range.end = (self.changes[change_idx].new_range.end as i64 - length_diff) as usize;
+                        self.changes[change_idx].new_range.end = (self.changes[change_idx].new_range.end as i64 - length_change) as usize;
 
                         // Adjust the position of the following ranges
                         for move_idx in (change_idx+1)..self.changes.len() {
-                            self.changes[move_idx].new_range.start = (self.changes[move_idx].new_range.start as i64 - length_diff) as usize;
-                            self.changes[move_idx].new_range.end = (self.changes[move_idx].new_range.end as i64 - length_diff) as usize;
+                            self.changes[move_idx].new_range.start = (self.changes[move_idx].new_range.start as i64 - length_change) as usize;
+                            self.changes[move_idx].new_range.end = (self.changes[move_idx].new_range.end as i64 - length_change) as usize;
                         }
                     }
-                    break;
+
+                    if length_change == length_diff {
+                        // Entire length change was contained within the current change
+                        break;
+                    } else {
+                        // Current range was too short to incorporate the entire change (trying to shrink a range by more than its overall size)
+                        let change              = &self.changes[change_idx];
+                        remaining_range.end     -= length_change as usize;
+
+                        let old_len             = change.original_range.len() as i64;
+                        let new_len             = change.new_range.len() as i64;
+
+                        diff                    += old_len - new_len;
+                        change_idx              += 1;
+                    }
                 } else {
                     // Continue with the following range
                     let used_length = change.new_range.end - remaining_range.start;
@@ -161,7 +177,7 @@ PullFn:     Fn() -> () {
                         new_range:      remaining_range.start..(remaining_range.start+remaining_length)
                     });
 
-                    // New change is entirely within the existing change
+                    // New change is entirely within the existing gap
                     let length_diff = (remaining_range.len() as i64) - (remaining_length as i64);
 
                     if length_diff != 0 {
@@ -386,6 +402,30 @@ mod test {
 
         assert!(rope.changes[0].original_range == (5..10));
         assert!(rope.changes[0].new_range == (5..15));
+        assert!(rope.changes.len() == 4);
+    }
+
+    #[test]
+    fn add_and_shrink_range() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.mark_change(5..10, 10);
+        rope.mark_change(20..25, 5);
+        rope.mark_change(5..30, 40);
+        rope.mark_change(5..45, 1);
+
+        assert!(rope.changes[0].original_range == (5..10));
+        assert!(rope.changes[0].new_range == (5..5));
+
+        assert!(rope.changes[1].original_range == (10..15));
+        assert!(rope.changes[1].new_range == (5..5));
+
+        assert!(rope.changes[2].original_range == (15..20));
+        assert!(rope.changes[2].new_range == (5..5));
+
+        assert!(rope.changes[3].original_range == (20..25));
+        assert!(rope.changes[3].new_range == (5..6));
+
         assert!(rope.changes.len() == 4);
     }
 
