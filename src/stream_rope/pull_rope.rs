@@ -124,8 +124,8 @@ PullFn:     Fn() -> () {
 
                         // Adjust the position of the following ranges
                         for move_idx in (change_idx+1)..self.changes.len() {
-                            self.changes[move_idx].new_range.start = (self.changes[move_idx].new_range.start as i64 - length_change) as usize;
-                            self.changes[move_idx].new_range.end = (self.changes[move_idx].new_range.end as i64 - length_change) as usize;
+                            self.changes[move_idx].new_range.start  = (self.changes[move_idx].new_range.start as i64 - length_change) as usize;
+                            self.changes[move_idx].new_range.end    = (self.changes[move_idx].new_range.end as i64 - length_change) as usize;
                         }
                     }
 
@@ -183,8 +183,8 @@ PullFn:     Fn() -> () {
                     if length_diff != 0 {
                         // Adjust the position of the following ranges
                         for move_idx in (change_idx+1)..self.changes.len() {
-                            self.changes[move_idx].new_range.start = (self.changes[move_idx].new_range.start as i64 - length_diff) as usize;
-                            self.changes[move_idx].new_range.end = (self.changes[move_idx].new_range.end as i64 - length_diff) as usize;
+                            self.changes[move_idx].new_range.start  = (self.changes[move_idx].new_range.start as i64 - length_diff) as usize;
+                            self.changes[move_idx].new_range.end    = (self.changes[move_idx].new_range.end as i64 - length_diff) as usize;
                         }
                     }
 
@@ -208,7 +208,25 @@ PullFn:     Fn() -> () {
                         change_idx              += 1;
                     } else {
                         // The new range needs to shrink the gap
-                        unimplemented!()
+                        self.changes.insert(change_idx, RopePendingChange {
+                            original_range: original_start..gap_end,
+                            new_range:      remaining_range.start..(remaining_range.start+remaining_length)
+                        });
+
+                        // Shrink the futur echanges
+                        let length_diff = gap_length - remaining_length;
+
+                        if length_diff != 0 {
+                            // Adjust the position of the following ranges
+                            for move_idx in (change_idx+1)..self.changes.len() {
+                                self.changes[move_idx].new_range.start  = self.changes[move_idx].new_range.start - length_diff;
+                                self.changes[move_idx].new_range.end    = self.changes[move_idx].new_range.end - length_diff;
+                            }
+                        }
+
+                        remaining_range.start   += gap_length;
+                        remaining_length        = 0;
+                        change_idx              += 1;
                     }
                 }
             }
@@ -520,13 +538,13 @@ mod test {
         assert!(rope.changes[0].new_range == (5..5));
 
         assert!(rope.changes[1].original_range == (10..15));
-        assert!(rope.changes[1].new_range == (5..5));
+        assert!(rope.changes[1].new_range == (5..6));
 
         assert!(rope.changes[2].original_range == (15..20));
-        assert!(rope.changes[2].new_range == (5..5));
+        assert!(rope.changes[2].new_range == (6..6));
 
         assert!(rope.changes[3].original_range == (20..25));
-        assert!(rope.changes[3].new_range == (5..6));
+        assert!(rope.changes[3].new_range == (6..6));
 
         assert!(rope.changes.len() == 4);
     }
