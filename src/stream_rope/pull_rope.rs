@@ -89,7 +89,7 @@ PullFn:     Fn() -> () {
     ///
     /// Marks a region as changed for the next pull request
     ///
-    fn mark_change(&mut self, original_range: Range<usize>, new_length: usize) {
+    fn mark_change(&mut self, original_range: Range<usize>, new_length: usize, attribute_change: bool) {
         // Find the existing change corresponding to the start of the range
         let (mut change_idx, mut diff)  = self.find_change(original_range.start);
         let mut remaining_range         = original_range;
@@ -292,7 +292,7 @@ mod test {
     fn add_initial_change_range() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(4..10, 15);
+        rope.mark_change(4..10, 15, false);
 
         assert!(rope.changes[0].original_range == (4..10));
         assert!(rope.changes[0].new_range == (4..19));
@@ -303,7 +303,7 @@ mod test {
     fn shrink_range() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..45, 1);
+        rope.mark_change(5..45, 1, false);
 
         assert!(rope.changes[0].original_range == (5..45));
         assert!(rope.changes[0].new_range == (5..6));
@@ -314,8 +314,8 @@ mod test {
     fn add_multiple_changes_at_end() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(4..10, 15);
-        rope.mark_change(20..25, 5);
+        rope.mark_change(4..10, 15, false);
+        rope.mark_change(20..25, 5, false);
 
         assert!(rope.changes[1].original_range == (11..16));
         assert!(rope.changes[1].new_range == (20..25));
@@ -329,9 +329,9 @@ mod test {
     fn add_overlapping_range_with_no_size_change() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(4..10, 15);
-        rope.mark_change(20..25, 5);
-        rope.mark_change(6..11, 5);
+        rope.mark_change(4..10, 15, false);
+        rope.mark_change(20..25, 5, false);
+        rope.mark_change(6..11, 5, false);
 
         assert!(rope.changes[1].original_range == (11..16));
         assert!(rope.changes[1].new_range == (20..25));
@@ -345,10 +345,10 @@ mod test {
     fn add_overlapping_range_with_size_change() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(4..10, 15);
-        rope.mark_change(20..25, 5);
+        rope.mark_change(4..10, 15, false);
+        rope.mark_change(20..25, 5, false);
 
-        rope.mark_change(6..12, 5);
+        rope.mark_change(6..12, 5, false);
 
         assert!(rope.changes[0].original_range == (4..10));
         assert!(rope.changes[0].new_range == (4..18));
@@ -363,8 +363,8 @@ mod test {
     fn add_overlapping_range_partially_at_end() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(4..10, 15);
-        rope.mark_change(4..30, 20);
+        rope.mark_change(4..10, 15, false);
+        rope.mark_change(4..30, 20, false);
 
         assert!(rope.changes[0].original_range == (4..10));
         assert!(rope.changes[0].new_range == (4..19));
@@ -379,9 +379,9 @@ mod test {
     fn add_range_covering_existing_ranges() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 15);
-        rope.mark_change(20..25, 5);
-        rope.mark_change(5..30, 40);
+        rope.mark_change(5..10, 15, false);
+        rope.mark_change(20..25, 5, false);
+        rope.mark_change(5..30, 40, false);
 
         assert!(rope.changes[2].original_range == (15..20));
         assert!(rope.changes[2].new_range == (25..45));
@@ -398,9 +398,9 @@ mod test {
     fn add_range_in_gap() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 10);
-        rope.mark_change(20..25, 10);
-        rope.mark_change(15..20, 10);
+        rope.mark_change(5..10, 10, false);
+        rope.mark_change(20..25, 10, false);
+        rope.mark_change(15..20, 10, false);
 
         assert!(rope.changes[1].original_range == (10..15));
         assert!(rope.changes[1].new_range == (15..25));
@@ -417,9 +417,9 @@ mod test {
     fn add_range_partially_in_gap() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 10);
-        rope.mark_change(20..25, 10);
-        rope.mark_change(15..18, 8);
+        rope.mark_change(5..10, 10, false);
+        rope.mark_change(20..25, 10, false);
+        rope.mark_change(15..18, 8, false);
 
         assert!(rope.changes[1].original_range == (10..13));
         assert!(rope.changes[1].new_range == (15..23));
@@ -436,9 +436,9 @@ mod test {
     fn shrink_gap() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 10);
-        rope.mark_change(20..25, 10);
-        rope.mark_change(15..20, 1);
+        rope.mark_change(5..10, 10, false);
+        rope.mark_change(20..25, 10, false);
+        rope.mark_change(15..20, 1, false);
 
         assert!(rope.changes[1].original_range == (10..15));
         assert!(rope.changes[1].new_range == (15..16));
@@ -455,9 +455,9 @@ mod test {
     fn add_range_overlapping_gap() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 10);
-        rope.mark_change(20..25, 10);
-        rope.mark_change(5..20, 20);
+        rope.mark_change(5..10, 10, false);
+        rope.mark_change(20..25, 10, false);
+        rope.mark_change(5..20, 20, false);
 
         assert!(rope.changes[1].original_range == (10..15));
         assert!(rope.changes[1].new_range == (15..25));
@@ -474,9 +474,9 @@ mod test {
     fn add_range_partially_overlapping_gap() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 10);
-        rope.mark_change(20..25, 10);
-        rope.mark_change(5..18, 18);
+        rope.mark_change(5..10, 10, false);
+        rope.mark_change(20..25, 10, false);
+        rope.mark_change(5..18, 18, false);
 
         assert!(rope.changes[1].original_range == (10..13));
         assert!(rope.changes[1].new_range == (15..23));
@@ -493,9 +493,9 @@ mod test {
     fn add_range_with_gap_between_existing_ranges() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 10);
-        rope.mark_change(20..25, 5);
-        rope.mark_change(5..30, 40);
+        rope.mark_change(5..10, 10, false);
+        rope.mark_change(20..25, 5, false);
+        rope.mark_change(5..30, 40, false);
 
         assert!(rope.changes[1].original_range == (10..15));
         assert!(rope.changes[1].new_range == (15..20));
@@ -515,10 +515,10 @@ mod test {
     fn add_and_shrink_range() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 10);
-        rope.mark_change(20..25, 5);
-        rope.mark_change(5..30, 40);
-        rope.mark_change(5..45, 1);
+        rope.mark_change(5..10, 10, false);
+        rope.mark_change(20..25, 5, false);
+        rope.mark_change(5..30, 40, false);
+        rope.mark_change(5..45, 1, false);
 
         assert!(rope.changes[0].original_range == (5..10));
         assert!(rope.changes[0].new_range == (5..5));
@@ -539,8 +539,8 @@ mod test {
     fn add_and_shrink_at_end() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 10);
-        rope.mark_change(5..45, 1);
+        rope.mark_change(5..10, 10, false);
+        rope.mark_change(5..45, 1, false);
 
         assert!(rope.changes[0].original_range == (5..10));
         assert!(rope.changes[0].new_range == (5..5));
@@ -555,9 +555,9 @@ mod test {
     fn add_and_shrink_range_across_gap_1() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 10);
-        rope.mark_change(20..25, 5);
-        rope.mark_change(5..45, 1);
+        rope.mark_change(5..10, 10, false);
+        rope.mark_change(20..25, 5, false);
+        rope.mark_change(5..45, 1, false);
 
         assert!(rope.changes[0].original_range == (5..10));
         assert!(rope.changes[0].new_range == (5..5));
@@ -578,9 +578,9 @@ mod test {
     fn add_and_shrink_range_across_gap_2() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 5);
-        rope.mark_change(20..25, 5);
-        rope.mark_change(5..45, 1);
+        rope.mark_change(5..10, 5, false);
+        rope.mark_change(20..25, 5, false);
+        rope.mark_change(5..45, 1, false);
 
         assert!(rope.changes[0].original_range == (5..10));
         assert!(rope.changes[0].new_range == (5..5));
@@ -601,9 +601,9 @@ mod test {
     fn add_and_shrink_range_into_gap() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 10);
-        rope.mark_change(20..25, 5);
-        rope.mark_change(5..18, 1);
+        rope.mark_change(5..10, 10, false);
+        rope.mark_change(20..25, 5, false);
+        rope.mark_change(5..18, 1, false);
 
         assert!(rope.changes[0].original_range == (5..10));
         assert!(rope.changes[0].new_range == (5..5));
@@ -621,10 +621,10 @@ mod test {
     fn add_and_erase_range() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
-        rope.mark_change(5..10, 10);
-        rope.mark_change(20..25, 5);
-        rope.mark_change(5..30, 40);
-        rope.mark_change(5..45, 0);
+        rope.mark_change(5..10, 10, false);
+        rope.mark_change(20..25, 5, false);
+        rope.mark_change(5..30, 40, false);
+        rope.mark_change(5..45, 0, false);
 
         assert!(rope.changes[0].original_range == (5..10));
         assert!(rope.changes[0].new_range == (5..5));
