@@ -248,10 +248,10 @@ PullFn:     Fn() -> () {
     }
 }
 
-impl<BaseRope, PushFn> Rope for PullRope<BaseRope, PushFn>
+impl<BaseRope, PullFn> Rope for PullRope<BaseRope, PullFn>
 where 
 BaseRope:   RopeMut, 
-PushFn:     Fn() -> () {
+PullFn:     Fn() -> () {
     /// A 'cell' or character in the rope. For a UTF-8 rope this could be `u8`, for xample
     type Cell = BaseRope::Cell;
 
@@ -280,6 +280,83 @@ PushFn:     Fn() -> () {
     #[inline]
     fn read_attributes<'a>(&'a self, pos: usize) -> (&'a Self::Attribute, Range<usize>) {
         self.rope.read_attributes(pos)
+    }
+}
+
+impl<BaseRope, PullFn> RopeMut for PullRope<BaseRope, PullFn>
+where 
+BaseRope:   RopeMut, 
+PullFn:     Fn() -> () {
+    ///
+    /// Performs the specified editing action to this rope
+    ///
+    fn edit(&mut self, action: RopeAction<Self::Cell, Self::Attribute>) {
+        let need_pull = self.changes.len() == 0;
+
+        // Store the change
+        match &action {
+            RopeAction::Replace(range, new_values)                  => self.mark_change(range.clone(), new_values.len(), false),
+            RopeAction::SetAttributes(range, _attr)                 => self.mark_change(range.clone(), range.len(), true),
+            RopeAction::ReplaceAttributes(range, new_values, _attr) => self.mark_change(range.clone(), new_values.len(), true)
+        }
+
+        // Pass on to the base rope
+        self.rope.edit(action);
+
+        // Indicate that there are pending changes
+        if need_pull && self.changes.len() > 0 {
+            (self.pull_fn)();
+        }
+    }
+
+    ///
+    /// Replaces a range of cells. The attributes applied to the new cells will be the same
+    /// as the attributes that were applied to the first cell in the replacement range
+    ///
+    fn replace<NewCells: IntoIterator<Item=Self::Cell>>(&mut self, range: Range<usize>, new_cells: NewCells) {
+        let need_pull = self.changes.len() == 0;
+
+        let new_cells = new_cells.into_iter().collect::<Vec<_>>();
+
+        self.mark_change(range.clone(), new_cells.len(), false);
+        self.rope.replace(range, new_cells);
+
+        // Indicate that there are pending changes
+        if need_pull && self.changes.len() > 0 {
+            (self.pull_fn)();
+        }
+    }
+
+    ///
+    /// Sets the attributes for a range of cells
+    ///
+    fn set_attributes(&mut self, range: Range<usize>, new_attributes: Self::Attribute) {
+        let need_pull = self.changes.len() == 0;
+
+        self.mark_change(range.clone(), range.len(), true);
+        self.rope.set_attributes(range, new_attributes);
+
+        // Indicate that there are pending changes
+        if need_pull && self.changes.len() > 0 {
+            (self.pull_fn)();
+        }
+    }
+
+    ///
+    /// Replaces a range of cells and sets the attributes for them.
+    ///
+    fn replace_attributes<NewCells: IntoIterator<Item=Self::Cell>>(&mut self, range: Range<usize>, new_cells: NewCells, new_attributes: Self::Attribute) {
+        let need_pull = self.changes.len() == 0;
+
+        let new_cells = new_cells.into_iter().collect::<Vec<_>>();
+
+        self.mark_change(range.clone(), new_cells.len(), true);
+        self.rope.replace_attributes(range, new_cells, new_attributes);
+
+        // Indicate that there are pending changes
+        if need_pull && self.changes.len() > 0 {
+            (self.pull_fn)();
+        }
     }
 }
 
