@@ -774,4 +774,25 @@ mod test {
 
         assert!(rope.changes.len() == 4);
     }
+
+    #[test]
+    fn pull_basic_change() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.replace(0..0, vec![1, 2, 3]);
+
+        let pulled = rope.pull_changes().collect::<Vec<_>>();
+        assert!(pulled == vec![RopeAction::Replace(0..0, vec![1, 2, 3])]);
+    }
+
+    #[test]
+    fn clear_after_pull() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.replace(0..0, vec![1, 2, 3]);
+
+        let _       = rope.pull_changes();
+        let pulled  = rope.pull_changes().collect::<Vec<_>>();
+        assert!(pulled == vec![]);
+    }
 }
