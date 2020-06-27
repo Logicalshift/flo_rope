@@ -223,6 +223,7 @@ PullFn:     Fn() -> () {
                         }
 
                         remaining_range.start   += remaining_length;
+                        remaining_range.end     -= gap_length-remaining_length;
                         remaining_length        = 0;
 
                         // Move to the next range
