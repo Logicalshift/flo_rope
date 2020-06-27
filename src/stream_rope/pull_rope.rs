@@ -10,7 +10,10 @@ struct RopePendingChange {
     original_range: Range<usize>,
 
     /// Where the replacement values appear in the updated rope
-    new_range: Range<usize>
+    new_range: Range<usize>,
+
+    /// True if the attributes for this range have changed
+    changed_attributes: bool
 }
 
 ///
@@ -102,8 +105,9 @@ PullFn:     Fn() -> () {
                 let original_end    = original_end as usize;
 
                 self.changes.push(RopePendingChange {
-                    original_range: original_start..original_end,
-                    new_range:      remaining_range.start..(remaining_range.start+remaining_length)
+                    original_range:     original_start..original_end,
+                    new_range:          remaining_range.start..(remaining_range.start+remaining_length),
+                    changed_attributes: false
                 });
 
                 break;
@@ -173,8 +177,9 @@ PullFn:     Fn() -> () {
                     let original_end    = original_end as usize;
 
                     self.changes.insert(change_idx, RopePendingChange {
-                        original_range: original_start..original_end,
-                        new_range:      remaining_range.start..(remaining_range.start+remaining_length)
+                        original_range:     original_start..original_end,
+                        new_range:          remaining_range.start..(remaining_range.start+remaining_length),
+                        changed_attributes: false
                     });
 
                     // New change is entirely within the existing gap
@@ -199,8 +204,9 @@ PullFn:     Fn() -> () {
                     if gap_length <= remaining_length {
                         // The new range covers the entire gap
                         self.changes.insert(change_idx, RopePendingChange {
-                            original_range: original_start..gap_end,
-                            new_range:      remaining_range.start..(remaining_range.start+gap_length)
+                            original_range:     original_start..gap_end,
+                            new_range:          remaining_range.start..(remaining_range.start+gap_length),
+                            changed_attributes: false
                         });
 
                         remaining_range.start   += gap_length;
@@ -209,8 +215,9 @@ PullFn:     Fn() -> () {
                     } else {
                         // The new range needs to shrink the gap
                         self.changes.insert(change_idx, RopePendingChange {
-                            original_range: original_start..gap_end,
-                            new_range:      remaining_range.start..(remaining_range.start+remaining_length)
+                            original_range:     original_start..gap_end,
+                            new_range:          remaining_range.start..(remaining_range.start+remaining_length),
+                            changed_attributes: false
                         });
 
                         // Shrink the future changes
