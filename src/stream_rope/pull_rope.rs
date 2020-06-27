@@ -1,5 +1,6 @@
 use crate::api::*;
 
+use std::mem;
 use std::ops::{Range};
 
 ///
@@ -245,6 +246,35 @@ PullFn:     Fn() -> () {
                 }
             }
         }
+    }
+
+    ///
+    /// Pulls the pending changes from this rope
+    ///
+    /// There will be no pending changes after this function returns
+    ///
+    pub fn pull_changes<'a>(&'a mut self) -> impl 'a+Iterator<Item=RopeAction<BaseRope::Cell, BaseRope::Attribute>> {
+        // Remove the pending changes from the rope
+        let mut pending_changes = vec![];
+        mem::swap(&mut self.changes, &mut pending_changes);
+
+        // Create an iterator to return the actions for these changes
+        // Changes are returned in reverse so these edits can be applied directly to another rope in the original state
+        pending_changes.into_iter()
+            .rev()
+            .filter(|change| change.original_range.len() > 0 || change.new_range.len() > 0)
+            .flat_map(move |change| {
+                // Read the cells for this change
+                let new_cells = self.rope.read_cells(change.new_range).cloned().collect::<Vec<_>>();
+
+                if change.changed_attributes {
+                    // Replace the cells and attributes in this range
+                    unimplemented!()
+                } else {
+                    // Just replace the cells in this range
+                    vec![RopeAction::Replace(change.original_range, new_cells)]
+                }
+            })
     }
 }
 
