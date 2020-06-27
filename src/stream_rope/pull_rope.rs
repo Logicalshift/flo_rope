@@ -292,6 +292,17 @@ mod test {
     }
 
     #[test]
+    fn shrink_range() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.mark_change(5..45, 1);
+
+        assert!(rope.changes[0].original_range == (5..45));
+        assert!(rope.changes[0].new_range == (5..6));
+        assert!(rope.changes.len() == 1);
+    }
+
+    #[test]
     fn add_multiple_changes_at_end() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
