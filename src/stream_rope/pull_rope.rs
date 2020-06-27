@@ -216,12 +216,10 @@ PullFn:     Fn() -> () {
                         // Shrink the futur echanges
                         let length_diff = gap_length - remaining_length;
 
-                        if length_diff != 0 {
-                            // Adjust the position of the following ranges
-                            for move_idx in (change_idx+1)..self.changes.len() {
-                                self.changes[move_idx].new_range.start  = self.changes[move_idx].new_range.start - length_diff;
-                                self.changes[move_idx].new_range.end    = self.changes[move_idx].new_range.end - length_diff;
-                            }
+                        // Adjust the position of the following ranges
+                        for move_idx in (change_idx+1)..self.changes.len() {
+                            self.changes[move_idx].new_range.start  = self.changes[move_idx].new_range.start - length_diff;
+                            self.changes[move_idx].new_range.end    = self.changes[move_idx].new_range.end - length_diff;
                         }
 
                         remaining_range.start   += gap_length;
