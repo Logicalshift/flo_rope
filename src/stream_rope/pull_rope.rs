@@ -108,12 +108,13 @@ PullFn:     Fn() -> () {
                 self.changes.push(RopePendingChange {
                     original_range:     original_start..original_end,
                     new_range:          remaining_range.start..(remaining_range.start+remaining_length),
-                    changed_attributes: false
+                    changed_attributes: attribute_change
                 });
 
                 break;
             } else if self.changes[change_idx].new_range.start <= remaining_range.start {
                 // We overlap with an existing range
+                self.changes[change_idx].changed_attributes = self.changes[change_idx].changed_attributes || attribute_change;
                 let change = &self.changes[change_idx];
 
                 let new_end = remaining_range.start + remaining_length;
@@ -207,7 +208,7 @@ PullFn:     Fn() -> () {
                         self.changes.insert(change_idx, RopePendingChange {
                             original_range:     original_start..gap_end,
                             new_range:          remaining_range.start..(remaining_range.start+gap_length),
-                            changed_attributes: false
+                            changed_attributes: attribute_change
                         });
 
                         remaining_range.start   += gap_length;
@@ -218,7 +219,7 @@ PullFn:     Fn() -> () {
                         self.changes.insert(change_idx, RopePendingChange {
                             original_range:     original_start..gap_end,
                             new_range:          remaining_range.start..(remaining_range.start+remaining_length),
-                            changed_attributes: false
+                            changed_attributes: attribute_change
                         });
 
                         // Shrink the future changes
