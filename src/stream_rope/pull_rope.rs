@@ -266,13 +266,39 @@ PullFn:     Fn() -> () {
             .filter(|change| change.original_range.len() > 0 || change.new_range.len() > 0)
             .flat_map(move |change| {
                 // Read the cells for this change
-                let new_cells = self.rope.read_cells(change.new_range).cloned().collect::<Vec<_>>();
-
-                if change.changed_attributes {
+                if change.changed_attributes && change.new_range.len() > 0 {
                     // Replace the cells and attributes in this range
-                    unimplemented!()
+
+                    // Usually the attribute will cover the whole range but it's possible to create multiple attributes in a range via several updates: we work backwards until we've covered the entire range
+                    let mut original_range  = change.original_range;
+                    let new_range           = change.new_range;
+                    let mut end_pos         = new_range.end;
+                    let mut changes         = vec![];
+
+                    loop {
+                        // Read the attributes at the current end position
+                        let (attribute, attribute_range)    = self.rope.read_attributes(end_pos-1);
+                        let start_pos                       = new_range.start.max(attribute_range.start);
+                        let valid_range                     = start_pos..end_pos;
+                        let new_cells                       = self.read_cells(valid_range).cloned().collect();
+
+                        changes.push(RopeAction::ReplaceAttributes(original_range.clone(), new_cells, attribute.clone()));
+
+                        // Stop once we reach the start of the changed range
+                        if start_pos <= new_range.start { break; }
+
+                        // Make the next change an insertion at the beginning of the range
+                        original_range                      = original_range.start..original_range.start;
+
+                        // Continue searching for attributes from the point we reached
+                        end_pos                             = start_pos;
+                    }
+
+                    changes
                 } else {
                     // Just replace the cells in this range
+                    let new_cells = self.rope.read_cells(change.new_range.clone()).cloned().collect::<Vec<_>>();
+
                     vec![RopeAction::Replace(change.original_range, new_cells)]
                 }
             })
