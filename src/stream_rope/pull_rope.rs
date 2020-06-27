@@ -544,7 +544,7 @@ mod test {
     }
 
     #[test]
-    fn add_and_shrink_range_across_gap() {
+    fn add_and_shrink_range_across_gap_1() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
         rope.mark_change(5..10, 10);
@@ -560,7 +560,30 @@ mod test {
         assert!(rope.changes[2].original_range == (15..20));
         assert!(rope.changes[2].new_range == (6..6));
 
-        assert!(rope.changes[3].original_range == (20..25));
+        assert!(rope.changes[3].original_range == (20..40));
+        assert!(rope.changes[3].new_range == (6..6));
+
+        assert!(rope.changes.len() == 4);
+    }
+
+    #[test]
+    fn add_and_shrink_range_across_gap_2() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.mark_change(5..10, 5);
+        rope.mark_change(20..25, 5);
+        rope.mark_change(5..45, 1);
+
+        assert!(rope.changes[0].original_range == (5..10));
+        assert!(rope.changes[0].new_range == (5..5));
+
+        assert!(rope.changes[1].original_range == (10..20));
+        assert!(rope.changes[1].new_range == (5..6));
+
+        assert!(rope.changes[2].original_range == (20..25));
+        assert!(rope.changes[2].new_range == (6..6));
+
+        assert!(rope.changes[3].original_range == (25..45));
         assert!(rope.changes[3].new_range == (6..6));
 
         assert!(rope.changes.len() == 4);
