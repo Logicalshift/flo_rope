@@ -222,7 +222,7 @@ PullFn:     Fn() -> () {
                             self.changes[move_idx].new_range.end    = self.changes[move_idx].new_range.end - length_diff;
                         }
 
-                        remaining_range.start   += gap_length;
+                        remaining_range.start   += remaining_length;
                         remaining_length        = 0;
 
                         // Move to the next range
