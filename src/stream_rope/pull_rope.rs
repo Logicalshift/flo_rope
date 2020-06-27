@@ -213,7 +213,7 @@ PullFn:     Fn() -> () {
                             new_range:      remaining_range.start..(remaining_range.start+remaining_length)
                         });
 
-                        // Shrink the futur echanges
+                        // Shrink the future changes
                         let length_diff = gap_length - remaining_length;
 
                         // Adjust the position of the following ranges
@@ -224,6 +224,14 @@ PullFn:     Fn() -> () {
 
                         remaining_range.start   += gap_length;
                         remaining_length        = 0;
+
+                        // Move to the next range
+                        let change              = &self.changes[change_idx];
+
+                        let old_len             = change.original_range.len() as i64;
+                        let new_len             = change.new_range.len() as i64;
+
+                        diff                    += old_len - new_len;
                         change_idx              += 1;
                     }
                 }
