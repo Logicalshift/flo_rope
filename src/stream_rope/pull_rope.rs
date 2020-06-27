@@ -135,7 +135,7 @@ PullFn:     Fn() -> () {
                     } else {
                         // Current range was too short to incorporate the entire change (trying to shrink a range by more than its overall size)
                         let change              = &self.changes[change_idx];
-                        remaining_range.end     -= length_change as usize;
+                        remaining_range.start   += length_change as usize;
 
                         let old_len             = change.original_range.len() as i64;
                         let new_len             = change.new_range.len() as i64;
