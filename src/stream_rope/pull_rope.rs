@@ -678,10 +678,10 @@ mod test {
         rope.mark_change(5..45, 1, false);
 
         assert!(rope.changes[0].original_range == (5..10));
-        assert!(rope.changes[0].new_range == (5..5));
+        assert!(rope.changes[0].new_range == (5..6));
 
         assert!(rope.changes[1].original_range == (10..40));
-        assert!(rope.changes[1].new_range == (5..6));
+        assert!(rope.changes[1].new_range == (6..6));
 
         assert!(rope.changes.len() == 2);
     }
