@@ -117,8 +117,7 @@ PullFn:     Fn() -> () {
                 self.changes[change_idx].changed_attributes = self.changes[change_idx].changed_attributes || attribute_change;
                 let change = &self.changes[change_idx];
 
-                let new_end = remaining_range.start + remaining_length;
-                if new_end < change.new_range.end {
+                if remaining_range.end < change.new_range.end {
                     // New change is entirely within the existing change
                     let max_diff        = change.new_range.len() as i64;
                     let length_diff     = (remaining_range.len() as i64) - (remaining_length as i64);
@@ -789,6 +788,6 @@ mod test {
 
         assert!(rope.changes[0].original_range == (0..0));
         assert!(rope.changes[0].new_range == (0..5));
-        assert!(rope.changes.len() == 2);
+        assert!(rope.changes.len() == 1);
     }
 }
