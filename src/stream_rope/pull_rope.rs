@@ -783,6 +783,7 @@ mod test {
 
         assert!(rope.changes[0].original_range == (0..0));
         assert!(rope.changes[0].new_range == (0..3));
+        assert!(rope.find_change(0) == (0, 0));
 
         rope.mark_change(1..2, 3, false);
 
