@@ -134,28 +134,30 @@ PullFn:     Fn() -> () {
                         }
                     }
 
-                    if length_change == length_diff {
-                        // Entire length change was contained within the current change
-                        break;
-                    } else {
-                        // Current range was too short to incorporate the entire change (trying to shrink a range by more than its overall size)
-                        let change              = &self.changes[change_idx];
-                        remaining_range.end     -= length_change as usize;
-
-                        let old_len             = change.original_range.len() as i64;
-                        let new_len             = change.new_range.len() as i64;
-
-                        diff                    += old_len - new_len;
-                        change_idx              += 1;
-                    }
+                    break;
                 } else {
-                    // Continue with the following range
-                    let used_length = change.new_range.end - remaining_range.start;
-
+                    // Continue with the following range, by using all of the existing range
+                    let used_length         = change.new_range.end - remaining_range.start;
                     remaining_range.start   += used_length;
-                    remaining_length        -= used_length;
+
+                    if remaining_length >= used_length {
+                        // The new items all fit within this range, so keep it as is
+                        remaining_length        -= used_length;
+                    } else {
+                        // The new range is shorter than this range, so shrink it by that much
+                        let length_diff = change.new_range.len() - remaining_length;
+                        self.changes[change_idx].new_range.end    = self.changes[change_idx].new_range.start + remaining_length;
+
+                        for move_idx in (change_idx+1)..self.changes.len() {
+                            self.changes[move_idx].new_range.start  = self.changes[move_idx].new_range.start - length_diff;
+                            self.changes[move_idx].new_range.end    = self.changes[move_idx].new_range.end - length_diff;
+                        }
+
+                        remaining_length        = 0;
+                    }
 
                     // New range will be overlapping or before the next change
+                    let change  = &self.changes[change_idx];
                     let old_len = change.original_range.len() as i64;
                     let new_len = change.new_range.len() as i64;
 
