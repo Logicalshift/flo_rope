@@ -776,6 +776,22 @@ mod test {
     }
 
     #[test]
+    fn extend_initial_range() {
+        let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+        rope.mark_change(0..0, 3, false);
+
+        assert!(rope.changes[0].original_range == (0..0));
+        assert!(rope.changes[0].new_range == (0..3));
+
+        rope.mark_change(1..2, 3, false);
+
+        assert!(rope.changes[0].original_range == (0..0));
+        assert!(rope.changes[0].new_range == (0..5));
+        assert!(rope.changes.len() == 2);
+    }
+
+    #[test]
     fn pull_basic_change() {
         let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
 
