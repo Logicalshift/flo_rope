@@ -62,6 +62,16 @@ fn pull_overlapping_changes() {
     rope.replace(1..2, vec![1, 2, 3]);
 
     let pulled = rope.pull_changes().collect::<Vec<_>>();
-    println!("{:?}", pulled);
     assert!(pulled == vec![RopeAction::Replace(0..0, vec![1, 1, 2, 3, 3])]);
+}
+
+#[test]
+fn notify_attribute_changes() {
+    let mut rope = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+    rope.replace(0..0, vec![1, 2, 3]);
+    rope.replace_attributes(1..2, vec![1, 2, 3], ());
+
+    let pulled = rope.pull_changes().collect::<Vec<_>>();
+    assert!(pulled == vec![RopeAction::ReplaceAttributes(0..0, vec![1, 1, 2, 3, 3], ())]);
 }
