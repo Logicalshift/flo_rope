@@ -87,6 +87,23 @@ PullFn:     Fn() -> () {
         (self.changes.len(), diff)
     }
 
+    #[cfg(test)]
+    fn check_integrity(&self) {
+        for change_idx in 1..self.changes.len() {
+            let last_change = &self.changes[change_idx-1];
+            let this_change = &self.changes[change_idx];
+
+            assert!(last_change.original_range.end <= this_change.original_range.start);
+            assert!(last_change.new_range.end <= this_change.new_range.start);
+        }
+    }
+
+    #[cfg(not(test))]
+    #[inline]
+    fn check_integrity(&self) {
+
+    }
+
     ///
     /// Marks a region as changed for the next pull request
     ///
@@ -97,6 +114,8 @@ PullFn:     Fn() -> () {
         let mut remaining_length        = new_length;
 
         loop {
+            self.check_integrity();
+
             // If the index is beyond the end of the existing changes, then just add the edit range to the end
             if change_idx >= self.changes.len() {
                 // Adjust the original range to match the new range
@@ -253,6 +272,8 @@ PullFn:     Fn() -> () {
                 }
             }
         }
+
+        self.check_integrity();
     }
 
     ///
