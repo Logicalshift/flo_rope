@@ -178,6 +178,10 @@ PullFn:     Fn() -> () {
 
                         // The entire length is consumed
                         remaining_length        = 0;
+
+                        if remaining_range.start == remaining_range.end {
+                            break;
+                        }
                     }
 
                     // New range will be overlapping or before the next change
