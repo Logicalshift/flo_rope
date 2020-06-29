@@ -153,6 +153,11 @@ PullFn:     Fn() -> () {
                             self.changes[move_idx].new_range.end    = self.changes[move_idx].new_range.end - length_diff;
                         }
 
+                        // The remaining range is moved by the same amount
+                        remaining_range.start   -= length_diff;
+                        remaining_range.end     -= length_diff;
+
+                        // The entire length is consumed
                         remaining_length        = 0;
                     }
 
