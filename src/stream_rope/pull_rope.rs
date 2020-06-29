@@ -686,16 +686,16 @@ mod test {
         rope.mark_change(5..45, 1, false);
 
         assert!(rope.changes[0].original_range == (5..10));
-        assert!(rope.changes[0].new_range == (5..5));
+        assert!(rope.changes[0].new_range == (5..6));
 
         assert!(rope.changes[1].original_range == (10..15));
-        assert!(rope.changes[1].new_range == (5..5));
+        assert!(rope.changes[1].new_range == (6..6));
 
         assert!(rope.changes[2].original_range == (15..20));
-        assert!(rope.changes[2].new_range == (5..5));
+        assert!(rope.changes[2].new_range == (6..6));
 
         assert!(rope.changes[3].original_range == (20..25));
-        assert!(rope.changes[3].new_range == (5..6));
+        assert!(rope.changes[3].new_range == (6..6));
 
         assert!(rope.changes.len() == 4);
     }
@@ -725,10 +725,10 @@ mod test {
         rope.mark_change(5..45, 1, false);
 
         assert!(rope.changes[0].original_range == (5..10));
-        assert!(rope.changes[0].new_range == (5..5));
+        assert!(rope.changes[0].new_range == (5..6));
 
         assert!(rope.changes[1].original_range == (10..15));
-        assert!(rope.changes[1].new_range == (5..6));
+        assert!(rope.changes[1].new_range == (6..6));
 
         assert!(rope.changes[2].original_range == (15..20));
         assert!(rope.changes[2].new_range == (6..6));
@@ -748,10 +748,10 @@ mod test {
         rope.mark_change(5..45, 1, false);
 
         assert!(rope.changes[0].original_range == (5..10));
-        assert!(rope.changes[0].new_range == (5..5));
+        assert!(rope.changes[0].new_range == (5..6));
 
         assert!(rope.changes[1].original_range == (10..20));
-        assert!(rope.changes[1].new_range == (5..6));
+        assert!(rope.changes[1].new_range == (6..6));
 
         assert!(rope.changes[2].original_range == (20..25));
         assert!(rope.changes[2].new_range == (6..6));
@@ -771,10 +771,10 @@ mod test {
         rope.mark_change(5..18, 1, false);
 
         assert!(rope.changes[0].original_range == (5..10));
-        assert!(rope.changes[0].new_range == (5..5));
+        assert!(rope.changes[0].new_range == (5..6));
 
         assert!(rope.changes[1].original_range == (10..13));
-        assert!(rope.changes[1].new_range == (5..6));
+        assert!(rope.changes[1].new_range == (6..6));
 
         assert!(rope.changes[2].original_range == (15..20));
         assert!(rope.changes[2].new_range == (8..13));
