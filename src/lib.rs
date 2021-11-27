@@ -20,8 +20,9 @@
 //! highly suited to representing text regions (and other collection data structures) 
 //! in a reactive user interface.
 //! 
-//! A companion library, `flo_binding` will provide support for the reactive model of 
-//! ropes, suitable for integrating into a user interface.
+//! A companion library, `flo_binding` provides support for the reactive model of ropes, 
+//! suitable for integrating into a user interface. See `RopeBinding` and `RopeBindingMut`
+//! in that crate.
 //! 
 //! ## Examples
 //! 
