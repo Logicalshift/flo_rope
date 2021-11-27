@@ -7,7 +7,7 @@ use std::marker::{PhantomData};
 /// concatenated rope, generates a single stream of actions representing the combined
 /// rope.
 ///
-pub struct ConcatRope<Cell, Attribute> {
+pub struct RopeConcatenator<Cell, Attribute> {
     cell: PhantomData<Cell>,
     attribute: PhantomData<Attribute>,
 
@@ -15,13 +15,13 @@ pub struct ConcatRope<Cell, Attribute> {
     left_len: usize
 }
 
-impl<Cell, Attribute> ConcatRope<Cell, Attribute> {
+impl<Cell, Attribute> RopeConcatenator<Cell, Attribute> {
     ///
     /// Creates a new concatenating rope. Initially both the left and the right-hand sides of
     /// the concatenated rope are considered to be empty.
     ///
-    pub fn new() -> ConcatRope<Cell, Attribute>{
-        ConcatRope {
+    pub fn new() -> RopeConcatenator<Cell, Attribute>{
+        RopeConcatenator {
             cell:       PhantomData,
             attribute:  PhantomData,
             left_len:   0

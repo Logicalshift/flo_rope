@@ -86,7 +86,7 @@ fn concat_str() {
     let mut concatenated    = AttributedRope::<u8, ()>::new();
 
     // A concatenator to join the edits to the LHS and RHS of the two ropes
-    let mut concatenator    = ConcatRope::new();
+    let mut concatenator    = RopeConcatenator::new();
 
     // LHS: 'Hello,'
     lhs.replace(0..0, "Hello,".bytes());
