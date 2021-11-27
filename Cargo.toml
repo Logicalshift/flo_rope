@@ -7,7 +7,7 @@ description     = "An attributed and streaming implementation of the rope data s
 repository      = "https://github.com/Logicalshift/flo_rope"
 documentation   = "http://docs.rs/flo_rope"
 readme          = "README.md"
-edition         = "2018"
+edition         = "2021"
 
 keywords        = [ "rope", "text" ]
 
