@@ -75,3 +75,52 @@ fn notify_attribute_changes() {
     let pulled = rope.pull_changes().collect::<Vec<_>>();
     assert!(pulled == vec![RopeAction::ReplaceAttributes(0..0, vec![1, 1, 2, 3, 3], ())]);
 }
+
+#[test]
+fn concat_str() {
+    // Two pull ropes to represent the left and right-hand side of the stream
+    let mut lhs             = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+    let mut rhs             = PullRope::from(AttributedRope::<u8, ()>::new(), || {});
+
+    // An attributed rope to contain the results of the operation
+    let mut concatenated    = AttributedRope::<u8, ()>::new();
+
+    // A concatenator to join the edits to the LHS and RHS of the two ropes
+    let mut concatenator    = ConcatRope::new();
+
+    // LHS: 'Hello,'
+    lhs.replace(0..0, "Hello,".bytes());
+    concatenator.send_left(lhs.pull_changes()).for_each(|edit| concatenated.edit(edit));
+
+    assert!(concatenated.to_string_lossy() == "Hello,");
+
+    // RHS: ' World'
+    rhs.replace(0..0, " World".bytes());
+    concatenator.send_right(rhs.pull_changes()).for_each(|edit| concatenated.edit(edit));
+
+    assert!(concatenated.to_string_lossy() == "Hello, World");
+
+    // LHS: replace 'Hello' with 'Goodbye'
+    lhs.replace(0..5, "Goodbye".bytes());
+    concatenator.send_left(lhs.pull_changes()).for_each(|edit| concatenated.edit(edit));
+
+    assert!(concatenated.to_string_lossy() == "Goodbye, World");
+
+    // RHS: replace 'orl' with 'ilfre'
+    rhs.replace(2..5, "ilfre".bytes());
+    concatenator.send_right(rhs.pull_changes()).for_each(|edit| concatenated.edit(edit));
+
+    assert!(concatenated.to_string_lossy() == "Goodbye, Wilfred");
+
+    // LHS: replace 'bye' with ' day'
+    lhs.replace(4..7, " day".bytes());
+    concatenator.send_left(lhs.pull_changes()).for_each(|edit| concatenated.edit(edit));
+
+    assert!(concatenated.to_string_lossy() == "Good day, Wilfred");
+
+    // RHS: replace 'Wil' with 'Al'
+    rhs.replace(1..4, "Al".bytes());
+    concatenator.send_right(rhs.pull_changes()).for_each(|edit| concatenated.edit(edit));
+
+    assert!(concatenated.to_string_lossy() == "Good day, Alfred");
+}

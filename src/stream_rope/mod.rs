@@ -9,7 +9,9 @@
 
 mod push_rope;
 mod pull_rope;
+mod concat_rope;
 #[cfg(test)] mod tests;
 
 pub use self::push_rope::*;
 pub use self::pull_rope::*;
+pub use self::concat_rope::*;
